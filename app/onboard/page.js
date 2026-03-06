@@ -98,8 +98,10 @@ export default function OnboardPage() {
     }, [status, session, step]);
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (formData.password !== formData.confirmPassword) {
+        if (e) e.preventDefault();
+        const isSocial = status === 'authenticated';
+
+        if (!isSocial && formData.password !== formData.confirmPassword) {
             alert("Passwords do not match");
             return;
         }
@@ -416,7 +418,19 @@ export default function OnboardPage() {
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
                             <button onClick={() => setStep(3)} className="btn-secondary" style={{ flex: 1 }}>Edit</button>
-                            <button onClick={() => setStep(5)} className="btn-primary" style={{ flex: 2 }}>Confirm and Set Security</button>
+                            <button
+                                onClick={() => {
+                                    if (status === 'authenticated') {
+                                        handleSubmit();
+                                    } else {
+                                        setStep(5);
+                                    }
+                                }}
+                                className="btn-primary"
+                                style={{ flex: 2 }}
+                            >
+                                {status === 'authenticated' ? (loading ? 'Processing...' : 'Complete Heritage') : 'Confirm and Set Security'}
+                            </button>
                         </div>
                     </div>
                 )}

@@ -2,6 +2,8 @@ import { executeQuery } from '@/lib/neo4j';
 import { generateUniqueId } from '@/lib/utils';
 import bcrypt from 'bcryptjs';
 import { Resend } from 'resend';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 export async function POST(request) {
     try {
@@ -23,24 +25,32 @@ export async function POST(request) {
         phoneNumber = trim(phoneNumber).replace(/\s+/g, '');
         phoneCode = trim(phoneCode) || '+254';
 
+        const session = await getServerSession(authOptions);
+        const isSocial = !!session?.user;
+
         // 2. Strict Validation
-        if (!name || !surname || !password || !sex) {
-            return Response.json({ error: 'Required identity fields (Name, Surname, Password, Sex) are missing.' }, { status: 400 });
+        if (!name || !surname || !sex || (!isSocial && !password)) {
+            return Response.json({ error: 'Required identity fields are missing.' }, { status: 400 });
         }
 
         if (email && !/^\S+@\S+\.\S+$/.test(email)) {
             return Response.json({ error: 'Invalid email format provided.' }, { status: 400 });
         }
 
-        // 3. Early Exit: Existence Check (Efficiency & Collision avoidance)
+        // 3. Early Exit: Existence Check (Skip if social user updating own profile)
         const checkQuery = `
             MATCH (p:Person) 
             WHERE 
-                (p.email = $email AND $email <> "") OR 
-                (p.phoneNumber = $phone AND $phone <> "")
+                ((p.email = $email AND $email <> "") OR 
+                 (p.phoneNumber = $phone AND $phone <> ""))
+                ${isSocial ? "AND p.email <> $socialEmail" : ""}
             RETURN p.id LIMIT 1
         `;
-        const existing = await executeQuery(checkQuery, { email, phone: phoneNumber });
+        const existing = await executeQuery(checkQuery, {
+            email,
+            phone: phoneNumber,
+            socialEmail: session?.user?.email || ""
+        });
 
         if (existing.length > 0) {
             return Response.json({ error: 'Identity already exists in the vault. Try signing in.' }, { status: 409 });
@@ -55,10 +65,34 @@ export async function POST(request) {
         while (attempts < maxAttempts) {
             id = generateUniqueId();
             try {
-                const passwordHash = await bcrypt.hash(password, 10);
+                const passwordHash = password ? await bcrypt.hash(password, 10) : "";
                 const securityAnswerHash = securityAnswer ? await bcrypt.hash(trim(securityAnswer).toLowerCase(), 10) : '';
 
-                const query = `
+                const query = isSocial ? `
+                    MATCH (p:Person {email: $socialEmail})
+                    SET p += {
+                        name: $name,
+                        surname: $surname,
+                        thirdName: $thirdName,
+                        fourthName: $fourthName,
+                        maidenName: $maidenName,
+                        sex: $sex,
+                        phoneCode: $phoneCode,
+                        phoneNumber: $phoneNumber,
+                        tribe: $tribe,
+                        subTribe: $subTribe,
+                        clan: $clan,
+                        birthPlace: $birthPlace,
+                        dob: $dob,
+                        birthOrder: $birthOrder,
+                        isDeceased: $isDeceased,
+                        deathYear: $deathYear,
+                        deathMonth: $deathMonth,
+                        updatedAt: datetime()
+                    }
+                    ${securityQuestion ? 'SET p.securityQuestion = $securityQuestion, p.securityAnswerHash = $securityAnswerHash' : ''}
+                    RETURN p.id as id, p.name as name
+                ` : `
                     CREATE (p:Person {
                         id: $id,
                         name: $name,
@@ -90,6 +124,7 @@ export async function POST(request) {
 
                 const params = {
                     id, name, surname,
+                    socialEmail: session?.user?.email || "",
                     thirdName: toTitleCase(trim(thirdName)),
                     fourthName: toTitleCase(trim(fourthName)),
                     maidenName: toTitleCase(trim(maidenName)),
