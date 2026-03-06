@@ -35,7 +35,9 @@ export async function POST(request) {
         // 3. Early Exit: Existence Check (Efficiency & Collision avoidance)
         const checkQuery = `
             MATCH (p:Person) 
-            WHERE (p.email = $email AND $email <> "") OR (p.id = $phone OR p.phoneNumber = $phone)
+            WHERE 
+                (p.email = $email AND $email <> "") OR 
+                (p.phoneNumber = $phone AND $phone <> "")
             RETURN p.id LIMIT 1
         `;
         const existing = await executeQuery(checkQuery, { email, phone: phoneNumber });
