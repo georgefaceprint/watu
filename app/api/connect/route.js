@@ -63,6 +63,53 @@ export async function POST(request) {
         }
     }
 
+    // Action handling for Manual Additions
+    if (action === 'MANUAL_ADD') {
+        const { details } = await request.json(); // Re-read if needed or structured differently
+        const { generateUniqueId } = await import('@/lib/utils');
+        const newId = generateUniqueId();
+
+        const query = `
+            MATCH (p1:Person {id: $personId})
+            CREATE (p2:Person {
+                id: $newId,
+                name: $name,
+                surname: $surname,
+                thirdName: $thirdName,
+                fourthName: $fourthName,
+                sex: $sex,
+                maidenName: $maidenName,
+                isDeceased: $isDeceased,
+                deathYear: $deathYear,
+                deathMonth: $deathMonth,
+                isCitizen: false,
+                createdAt: datetime()
+            })
+            MERGE (p1)-[r:${relationship}]->(p2)
+            SET r.status = 'VERIFIED', r.requestedAt = datetime(), r.verifiedAt = datetime()
+            RETURN p1.name as from, p2.id as newId, p2.name as to
+        `;
+
+        try {
+            const records = await executeQuery(query, {
+                personId,
+                newId,
+                name: details.name,
+                surname: details.surname,
+                thirdName: details.thirdName || '',
+                fourthName: details.fourthName || '',
+                sex: details.sex,
+                maidenName: details.maidenName || '',
+                isDeceased: !!details.isDeceased,
+                deathYear: details.deathYear || '',
+                deathMonth: details.deathMonth || ''
+            });
+            return Response.json({ success: true, id: newId, message: 'RELATIVE ADDED & CONNECTED' });
+        } catch (err) {
+            return Response.json({ error: err.message }, { status: 500 });
+        }
+    }
+
     const allowedRelationships = ['SIBLING_OF', 'PARENT_OF', 'SPOUSE_OF', 'CHILD_OF'];
     if (!allowedRelationships.includes(relationship)) {
         return Response.json({ error: 'Invalid relationship type' }, { status: 400 });
