@@ -13,6 +13,7 @@ export default function ConnectPage() {
         fourthName: '',
         sex: '',
         maidenName: '',
+        relationship: 'CHILD_OF',
         isDeceased: false,
         deathYear: '',
         deathMonth: ''
@@ -22,6 +23,48 @@ export default function ConnectPage() {
         const { name, value, type, checked } = e.target;
         setManualForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
+
+    const handleManualSubmit = async (e) => {
+        e.preventDefault();
+        if (!myId) {
+            alert("Please enter your Watu.Network ID first (top right)");
+            return;
+        }
+        if (!manualForm.name || !manualForm.surname || !manualForm.sex) {
+            alert("Please fill in the required fields (Sex, Given Name, Surname)");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const res = await fetch('/api/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    personId: myId,
+                    action: 'MANUAL_ADD',
+                    relationship: manualForm.relationship,
+                    details: manualForm
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`SUCCESS! ${manualForm.name} ADDED TO YOUR TREE (#${data.id})`);
+                setManualForm({
+                    name: '', surname: '', thirdName: '', fourthName: '',
+                    sex: '', maidenName: '', relationship: 'CHILD_OF',
+                    isDeceased: false, deathYear: '', deathMonth: ''
+                });
+            } else {
+                alert(data.error || "Failed to add relative");
+            }
+        } catch (err) {
+            alert("Connection failed");
+        } finally {
+            setLoading(false);
+        }
+    };
+    突破
 
     const handleSearch = async (e) => {
         e.preventDefault();
@@ -245,6 +288,39 @@ export default function ConnectPage() {
                                 </div>
                             )}
 
+                            {/* RELATIONSHIP SELECTION */}
+                            <div style={inputGroup}>
+                                <label style={labelStyle}>RELATIONSHIP TO YOU</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                                    {[
+                                        { label: 'FATHER / MOTHER', val: 'CHILD_OF' },
+                                        { label: 'SON / DAUGHTER', val: 'PARENT_OF' },
+                                        { label: 'BROTHER / SISTER', val: 'SIBLING_OF' },
+                                        { label: 'HUSBAND / WIFE', val: 'SPOUSE_OF' }
+                                    ].map(rel => (
+                                        <button
+                                            key={rel.val}
+                                            type="button"
+                                            onClick={() => setManualForm({ ...manualForm, relationship: rel.val })}
+                                            className="glass"
+                                            style={{
+                                                padding: '0.8rem',
+                                                fontSize: '0.75rem',
+                                                fontWeight: '700',
+                                                border: manualForm.relationship === rel.val ? '2px solid var(--accent)' : '1px solid var(--border)',
+                                                background: manualForm.relationship === rel.val ? 'var(--accent-muted)' : 'transparent',
+                                                color: manualForm.relationship === rel.val ? 'var(--accent)' : 'var(--foreground)',
+                                                borderRadius: '12px',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {rel.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="glass" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <input type="checkbox" id="addIsDeceased" name="isDeceased" checked={manualForm.isDeceased} onChange={handleManualChange} style={{ width: '16px', height: '16px' }} />
@@ -264,7 +340,15 @@ export default function ConnectPage() {
                                 )}
                             </div>
 
-                            <button className="btn-primary" style={{ padding: '1rem', width: '100%' }}>ADD TO MY FULL TREE</button>
+                            <button
+                                type="button"
+                                onClick={handleManualSubmit}
+                                className="btn-primary"
+                                style={{ padding: '1rem', width: '100%' }}
+                                disabled={loading}
+                            >
+                                {loading ? 'ADDING...' : 'ADD TO MY FULL TREE'}
+                            </button>
                         </div>
                     </div>
                 )}
