@@ -45,7 +45,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-    const { personId, relativeId, relationship, action } = await request.json();
+    const { personId, relativeId, relationship, action, details } = await request.json();
 
     // Action handling for Approvals (Delegated Administration)
     if (action === 'VERIFY') {
@@ -65,7 +65,6 @@ export async function POST(request) {
 
     // Action handling for Manual Additions
     if (action === 'MANUAL_ADD') {
-        const { details } = await request.json(); // Re-read if needed or structured differently
         const { generateUniqueId } = await import('@/lib/utils');
         const newId = generateUniqueId();
 
