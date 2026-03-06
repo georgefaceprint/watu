@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { calculateCompleteness } from '@/lib/utils';
 
 export default function ConnectPage() {
+    const { data: session } = useSession();
     const [search, setSearch] = useState({ name: '', surname: '', tribe: '', uniqueId: '', clan: '' });
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -73,9 +75,15 @@ export default function ConnectPage() {
     };
 
     useEffect(() => {
-        const storedId = localStorage.getItem('watu_id');
-        if (storedId) setMyId(storedId);
-    }, []);
+        // Priority 1: Session Watu ID
+        if (session?.user?.watuId) {
+            setMyId(session.user.watuId);
+        } else {
+            // Priority 2: Local Storage fallback
+            const storedId = localStorage.getItem('watu_id');
+            if (storedId) setMyId(storedId);
+        }
+    }, [session]);
 
     useEffect(() => {
         if (myId) {
