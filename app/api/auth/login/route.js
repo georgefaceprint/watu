@@ -13,27 +13,33 @@ export async function POST(request) {
             return Response.json({ error: 'ID and Password are required' }, { status: 400 });
         }
 
+        // Match by Watu ID, email, OR phone number
+        const lookupId = id.trim().toUpperCase();
         const query = `
-            MATCH (p:Person {id: $id})
-            RETURN p { .id, .name, .surname, .passwordHash } as user
+            MATCH (p:Person)
+            WHERE p.id = $lookupId
+               OR toLower(p.email) = toLower($raw)
+               OR p.phone = $raw
+            RETURN p { .id, .name, .surname, .email, .phone, .passwordHash } as user
+            LIMIT 1
         `;
 
-        const records = await executeQuery(query, { id });
+        const records = await executeQuery(query, { lookupId, raw: id.trim() });
 
         if (records.length === 0) {
-            return Response.json({ error: 'Invalid Identity Key' }, { status: 401 });
+            return Response.json({ error: 'No account found with that ID, email, or phone.' }, { status: 401 });
         }
 
         const user = records[0].get('user');
 
         if (!user.passwordHash) {
-            return Response.json({ error: 'Account not secured. Please contact support.' }, { status: 401 });
+            return Response.json({ error: 'Account not secured. Use forgot password to restore access.' }, { status: 401 });
         }
 
         const isValid = await bcrypt.compare(password, user.passwordHash);
 
         if (!isValid) {
-            return Response.json({ error: 'Invalid Password' }, { status: 401 });
+            return Response.json({ error: 'Incorrect password. Try again or use forgot identity.' }, { status: 401 });
         }
 
         // Create JWT
@@ -44,15 +50,19 @@ export async function POST(request) {
             .sign(SECRET);
 
         // Set Cookie
-        cookies().set('watu_session', token, {
+        const cookieStore = await cookies();
+        cookieStore.set('watu_session', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: 60 * 60 * 24, // 24 hours
+            maxAge: 60 * 60 * 24,
             path: '/',
         });
 
-        return Response.json({ success: true, user: { id: user.id, name: user.name, surname: user.surname } });
+        return Response.json({
+            success: true,
+            user: { id: user.id, name: user.name, surname: user.surname }
+        });
     } catch (err) {
         console.error('Login Error:', err);
         return Response.json({ error: 'Authentication failed' }, { status: 500 });

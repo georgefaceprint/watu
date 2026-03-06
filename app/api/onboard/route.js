@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 export async function POST(request) {
     try {
         const {
-            name, surname, thirdName, fourthName, maidenName, sex, email,
+            name, surname, thirdName, fourthName, maidenName, sex, email, phone,
             tribe, subTribe, clan, birthPlace, dob, birthOrder,
             securityQuestion, securityAnswer, password,
             isDeceased, deathYear, deathMonth
@@ -30,6 +30,7 @@ export async function POST(request) {
                 maidenName: $maidenName,
                 sex: $sex,
                 email: $email,
+                phone: $phone,
                 tribe: $tribe,
                 subTribe: $subTribe,
                 clan: $clan,
@@ -57,6 +58,7 @@ export async function POST(request) {
             maidenName: maidenName || '',
             sex,
             email: email || '',
+            phone: phone || '',
             tribe: tribe || '',
             subTribe: subTribe || '',
             clan: clan || '',

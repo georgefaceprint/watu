@@ -12,6 +12,7 @@ export default function OnboardPage() {
         maidenName: '',
         email: '',
         sex: '',
+        phone: '',
         dob: '',
         birthOrder: '',
         birthPlace: '',
@@ -158,8 +159,13 @@ export default function OnboardPage() {
                             )}
 
                             <div style={inputGroup}>
-                                <label style={labelStyle}>EMAIL ADDRESS <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL TO RECEIVE CREDENTIALS)</span></label>
+                                <label style={labelStyle}>EMAIL ADDRESS <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL — TO RECEIVE CREDENTIALS)</span></label>
                                 <input placeholder="E.G. CONTACT@HERITAGE.COM" name="email" value={formData.email} onChange={handleChange} className="input-field" />
+                            </div>
+
+                            <div style={inputGroup}>
+                                <label style={labelStyle}>PHONE NUMBER <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL — MAKES IT EASY TO REMEMBER/RECOVER YOUR ID)</span></label>
+                                <input type="tel" placeholder="+254 7XX XXX XXX" name="phone" value={formData.phone} onChange={handleChange} className="input-field" />
                             </div>
 
                             <button onClick={() => {

@@ -287,8 +287,8 @@ export default function LoginPage() {
                 {tab === 'watuId' && (
                     <form onSubmit={handleWatuIdLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         <div style={inputGroup}>
-                            <label style={labelStyle}>WATU ID</label>
-                            <input id="watu-id-input" type="text" placeholder="W-XXXX-XXXX" value={id} onChange={(e) => setId(e.target.value.toUpperCase())} className="auth-input" required />
+                            <label style={labelStyle}>WATU ID, EMAIL, OR PHONE NUMBER</label>
+                            <input id="watu-id-input" type="text" placeholder="W-XXXX / email@... / +254 7XX..." value={id} onChange={(e) => setId(e.target.value)} className="auth-input" required />
                         </div>
 
                         <div style={inputGroup}>
