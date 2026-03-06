@@ -4,10 +4,10 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
     try {
-        const { name, surname, thirdName, fourthName, tribe, subTribe, clan, birthPlace, birthDate, password } = await request.json();
+        const { name, surname, thirdName, fourthName, maidenName, tribe, subTribe, clan, birthPlace, birthDate, password, isDeceased, deathYear, deathMonth, sex } = await request.json();
 
-        if (!name || !surname || !tribe || !password) {
-            return Response.json({ error: 'Primary Identity, Tribe, and Password are required' }, { status: 400 });
+        if (!name || !surname || !tribe || !password || !sex) {
+            return Response.json({ error: 'Primary Identity, Tribe, Sex, and Password are required' }, { status: 400 });
         }
 
         const uniqueId = generateUniqueId();
@@ -20,6 +20,7 @@ export async function POST(request) {
                 surname: $surname,
                 thirdName: $thirdName,
                 fourthName: $fourthName,
+                maidenName: $maidenName,
                 tribe: $tribe,
                 subTribe: $subTribe,
                 clan: $clan,
@@ -27,6 +28,10 @@ export async function POST(request) {
                 birthDate: $birthDate,
                 passwordHash: $passwordHash,
                 isCitizen: true,
+                isDeceased: $isDeceased,
+                deathYear: $deathYear,
+                deathMonth: $deathMonth,
+                sex: $sex,
                 createdAt: datetime()
             })
             RETURN p
@@ -38,11 +43,16 @@ export async function POST(request) {
             surname,
             thirdName: thirdName || '',
             fourthName: fourthName || '',
+            maidenName: maidenName || '',
             tribe,
             subTribe: subTribe || '',
             clan: clan || '',
-            birthPlace,
-            birthDate,
+            birthPlace: birthPlace || '',
+            birthDate: birthDate || '',
+            isDeceased: !!isDeceased,
+            deathYear: deathYear || '',
+            deathMonth: deathMonth || '',
+            sex,
             passwordHash
         });
 

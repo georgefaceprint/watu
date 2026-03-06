@@ -13,29 +13,34 @@ export default function HomePage() {
     }, []);
 
     const sampleData = {
-        name: "Nelson Ndlela (Patriarch)",
+        name: "Nelson Ndlela",
+        isDeceased: true,
+        deathYear: "1998",
+        deathMonth: "October",
         children: [
             {
-                name: "Thabo Ndlela (Eldest Son)",
+                name: "Thabo Ndlela",
                 children: [
-                    { name: "Sipho Ndlela (Grandson)" },
-                    { name: "Nandi Ndlela (Granddaughter)" }
+                    { name: "Sipho Ndlela" },
+                    { name: "Nandi Ndlela" }
                 ]
             },
             {
-                name: "Zanele Moyo (Daughter)",
+                name: "Zanele Moyo",
+                isDeceased: true,
+                deathYear: "2015",
                 children: [
-                    { name: "Lerato Moyo (Granddaughter)" },
+                    { name: "Lerato Moyo" },
                     {
-                        name: "Bheki Moyo (Grandson)",
+                        name: "Bheki Moyo",
                         children: [
-                            { name: "Thandi Moyo (Great-Granddaughter)" }
+                            { name: "Thandi Moyo" }
                         ]
                     }
                 ]
             },
             {
-                name: "Kabelo Ndlela (Youngest Son)"
+                name: "Kabelo Ndlela"
             }
         ]
     };

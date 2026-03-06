@@ -3,7 +3,7 @@ import PWAInstaller from '../components/PWAInstaller';
 import AuthProvider from '../components/AuthProvider';
 
 export const viewport = {
-    themeColor: '#000000',
+    themeColor: '#f8fafc',
     width: 'device-width',
     initialScale: 1,
     maximumScale: 1,
@@ -29,8 +29,8 @@ export default function RootLayout({ children }) {
                         position: 'sticky',
                         top: 0,
                         zIndex: 100,
-                        background: 'rgba(0,0,0,0.7)',
-                        backdropFilter: 'blur(20px)',
+                        background: 'var(--glass-bg)',
+                        backdropFilter: 'blur(24px)',
                         borderBottom: '1px solid var(--border)',
                         padding: '0.75rem 1.5rem',
                         display: 'flex',
@@ -47,24 +47,26 @@ export default function RootLayout({ children }) {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontWeight: 'bold',
+                                color: '#fff',
                                 fontSize: '18px'
                             }}>W</div>
-                            <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#fff', letterSpacing: '-0.02em' }}>Watu<span style={{ color: 'var(--accent)' }}>.Network</span></h2>
+                            <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--foreground)', letterSpacing: '-0.02em' }}>Watu<span style={{ color: 'var(--accent)' }}>.Network</span></h2>
                         </div>
 
                         <div className="desktop-only" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                            <a href="/" style={{ fontSize: '0.9rem', fontWeight: '500' }}>Tree</a>
-                            <a href="/connect" style={{ fontSize: '0.9rem', fontWeight: '500' }}>Connect</a>
-                            <a href="/events" style={{ fontSize: '0.9rem', fontWeight: '500' }}>Events</a>
-                            <a href="/profile" style={{ fontSize: '0.9rem', fontWeight: '500' }}>My Profile</a>
+                            <a href="/" style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--foreground)' }}>Tree</a>
+                            <a href="/connect" style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--foreground)' }}>Connect</a>
+                            <a href="/events" style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--foreground)' }}>Events</a>
+                            <a href="/profile" style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--foreground)' }}>My Profile</a>
                             <a href="https://myhazina.org" target="_blank" style={{
-                                background: 'rgba(255,255,255,0.05)',
+                                background: 'var(--accent-muted)',
                                 border: '1px solid var(--border)',
                                 padding: '6px 16px',
                                 borderRadius: '999px',
                                 fontSize: '0.875rem',
                                 fontWeight: '600',
-                                color: 'var(--accent)'
+                                color: 'var(--accent)',
+                                textDecoration: 'none'
                             }}>MyHazina</a>
                         </div>
                     </header>

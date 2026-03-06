@@ -127,17 +127,19 @@ export default function FamilyTree({ data }) {
 
                 const initial = mainText.charAt(0);
                 const isHighlight = searchTerm && d.data.name.toLowerCase().includes(searchTerm.toLowerCase());
+                const isDeceased = d.data.isDeceased;
 
                 return `
-                    <div style="width: 40px; height: 40px; border-radius: 10px; background: ${isHighlight ? 'rgba(255,255,255,0.2)' : 'linear-gradient(135deg, var(--accent), var(--accent-secondary))'}; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: ${isHighlight ? 'rgba(255,255,255,0.2)' : isDeceased ? 'linear-gradient(135deg, #475569, #1e293b)' : 'linear-gradient(135deg, var(--accent), var(--accent-secondary))'}; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; border: 1px solid rgba(255,255,255,0.1); position: relative;">
+                        ${isDeceased ? '<span style="position: absolute; top: -5px; right: -5px; font-size: 12px;">🕊️</span>' : ''}
                         ${initial}
                     </div>
-                    <div style="flex: 1; overflow: hidden;">
+                    <div style="flex: 1; overflow: hidden; opacity: ${isDeceased ? 0.7 : 1}">
                         <div style="font-weight: 700; font-family: 'Outfit'; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">
                             ${mainText}
                         </div>
-                        <div style="font-size: 0.65rem; font-weight: 700; opacity: 0.7; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; color: ${isHighlight ? '#fff' : 'var(--accent)'};">
-                            ${subText}
+                        <div style="font-size: 0.65rem; font-weight: 700; opacity: 0.7; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; color: ${isHighlight ? '#fff' : isDeceased ? '#94a3b8' : 'var(--accent)'};">
+                            ${isDeceased ? `Departed ${d.data.deathYear || ''}` : subText}
                         </div>
                     </div>
                  `;

@@ -1,19 +1,40 @@
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
-  --accent: #6366f1; /* Electric Indigo */
-  --accent-secondary: #a855f7; /* Purple */
-  --accent-muted: rgba(99, 102, 241, 0.1);
-  --border: rgba(255, 255, 255, 0.1);
-  --card: #0a0a0a;
-  --card-hover: #141414;
-  --text-secondary: #94a3b8;
+  /* Graceful Blue and Pink Theme (Light) */
+  --background: #fdfafb;
+  --foreground: #1e293b;
+  --accent: #6366f1;
+  --accent-secondary: #f472b6;
+  --accent-muted: rgba(99, 102, 241, 0.08);
+  --border: rgba(0, 0, 0, 0.08);
+  --card: #ffffff;
+  --card-hover: #fdf2f8;
+  --text-secondary: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.5);
+
   --font-serif: 'Outfit', sans-serif;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --radius-lg: 24px;
   --radius-md: 16px;
   --radius-sm: 8px;
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+  --shadow-glow: 0 10px 25px -5px rgba(99, 102, 241, 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f1f5f9;
+    --accent: #818cf8;
+    --accent-secondary: #fb7185;
+    --accent-muted: rgba(129, 140, 248, 0.15);
+    --border: rgba(255, 255, 255, 0.1);
+    --card: #1e293b;
+    --card-hover: #334155;
+    --text-secondary: #94a3b8;
+    --glass-bg: rgba(15, 23, 42, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --shadow-glow: 0 0 20px rgba(129, 140, 248, 0.2);
+  }
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
@@ -34,10 +55,37 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4 {
+/* Global Uppercase for Identity Elements */
+h1,
+h2,
+h3,
+h4,
+label,
+button,
+.identity-text,
+input,
+select,
+textarea {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+h1,
+h2,
+h3,
+h4 {
   font-family: var(--font-serif);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+}
+
+/* Preserving Sentence Case for Long Texts */
+p,
+.description,
+.chat-message,
+.clan-story {
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .container {
@@ -48,18 +96,18 @@ h1, h2, h3, h4 {
 
 @media (min-width: 768px) {
   .container {
-    max-width: 800px;
+    max-width: 900px;
     padding: 3rem;
   }
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
 }
 
 .btn-primary {
@@ -68,11 +116,12 @@ h1, h2, h3, h4 {
   border: none;
   padding: 1rem 2rem;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 700;
   font-family: var(--font-serif);
-  font-size: 1rem;
+  font-size: 0.9rem;
   box-shadow: var(--shadow-glow);
-  transition: transform 0.2s, opacity 0.2s;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .btn-primary:active {
@@ -81,22 +130,44 @@ h1, h2, h3, h4 {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: var(--accent-muted);
+  color: var(--accent);
   border: 1px solid var(--border);
   padding: 1rem 2rem;
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 700;
   font-family: var(--font-serif);
-  font-size: 1rem;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* Input Styles Fix */
+input,
+select,
+textarea {
+  color: var(--foreground) !important;
+  /* Ensure visibility */
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-family: inherit;
+}
+
+input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
 }
 
 /* Animations */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(15px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -104,12 +175,7 @@ h1, h2, h3, h4 {
 }
 
 .animate-fade-in {
-  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Mobile-ready helper classes */
-.mobile-nav-active {
-  color: var(--accent);
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .bottom-nav {
@@ -118,7 +184,7 @@ h1, h2, h3, h4 {
   left: 0;
   right: 0;
   height: 70px;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--border);
   display: flex;

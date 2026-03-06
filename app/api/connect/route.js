@@ -33,7 +33,7 @@ export async function GET(request) {
         }
     }
 
-    query += `RETURN p { .id, .name, .surname, .tribe, .clan, .birthPlace } as person LIMIT 10`;
+    query += `RETURN p { .id, .name, .surname, .tribe, .clan, .birthPlace, .isDeceased, .deathYear, .deathMonth } as person LIMIT 10`;
 
     try {
         const records = await executeQuery(query, params);

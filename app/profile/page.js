@@ -10,11 +10,15 @@ export default function ProfilePage() {
         birthYear: '1992',
         residency: 'Mombasa Road, Nairobi',
         profession: 'Software Engineer',
-        clan: 'Kaplelach'
+        clan: 'Kaplelach',
+        isDeceased: false,
+        deathYear: '',
+        deathMonth: ''
     });
 
     const handleChange = (e) => {
-        setProfile({ ...profile, [e.target.name]: e.target.value });
+        const { name, value, type, checked } = e.target;
+        setProfile({ ...profile, [name]: type === 'checkbox' ? checked : value });
     };
 
     const handlePhotoChange = (e) => {
@@ -31,11 +35,11 @@ export default function ProfilePage() {
     return (
         <div className="container" style={{ paddingBottom: '100px' }}>
             <div style={{ marginBottom: '3rem' }}>
-                <h1 style={{ fontSize: '2.5rem', color: '#fff', marginBottom: '0.5rem' }}>Personal Heritage</h1>
+                <h1 style={{ fontSize: '2.5rem', color: 'var(--foreground)', marginBottom: '0.5rem' }}>Personal Heritage</h1>
                 <p style={{ color: 'var(--text-secondary)', maxWidth: '500px' }}>Complete your profile to build your digital legacy and help relatives find their connection to you.</p>
             </div>
 
-            <div className="glass animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem' }}>
+            <div className="glass animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem', background: 'var(--card)' }}>
                 {/* Photo & Identity Section */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem' }}>
                     <div style={{ position: 'relative' }}>
@@ -90,23 +94,33 @@ export default function ProfilePage() {
                     </div>
 
                     <div style={{ textAlign: 'center' }}>
-                        <h2 style={{ fontSize: '1.5rem', color: '#fff', marginBottom: '0.25rem' }}>{profile.name}</h2>
+                        <h2 style={{ fontSize: '1.5rem', color: 'var(--foreground)', marginBottom: '0.25rem' }}>{profile.name}</h2>
                         <code style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent)', padding: '4px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>W-XJ92-K5P1</code>
                         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '0.75rem', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', padding: '4px 12px', borderRadius: '999px', border: '1px solid rgba(34, 197, 94, 0.2)', fontWeight: 'bold' }}>VERIFIED</span>
+                            <span style={{
+                                fontSize: '0.75rem',
+                                background: profile.isDeceased ? 'rgba(248, 113, 113, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+                                color: profile.isDeceased ? '#f87171' : '#22c55e',
+                                padding: '4px 12px',
+                                borderRadius: '999px',
+                                border: `1px solid ${profile.isDeceased ? 'rgba(248, 113, 113, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`,
+                                fontWeight: 'bold'
+                            }}>
+                                {profile.isDeceased ? 'ANSOSTRAL RECORD' : 'VERIFIED'}
+                            </span>
                         </div>
                     </div>
 
                     <div style={{ width: '100%', marginTop: 'auto' }}>
-                        <div style={{ padding: '1.25rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <h4 style={{ fontSize: '0.85rem', color: '#fff', marginBottom: '1rem' }}>Heritage Connectivity</h4>
+                        <div style={{ padding: '1.25rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '20px', border: '1px solid var(--border)' }}>
+                            <h4 style={{ fontSize: '0.85rem', color: 'var(--foreground)', marginBottom: '1rem' }}>Heritage Connectivity</h4>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Clan Status</span>
-                                <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: '600' }}>Active Member</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '600' }}>{profile.isDeceased ? 'Resting' : 'Active Member'}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Family Branch</span>
-                                <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: '600' }}>Central Branch</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '600' }}>Central Branch</span>
                             </div>
                         </div>
                     </div>
@@ -128,6 +142,33 @@ export default function ProfilePage() {
                             <label style={labelStyle}>Year of Birth</label>
                             <input type="number" name="birthYear" value={profile.birthYear} onChange={handleChange} className="profile-input" />
                         </div>
+                    </div>
+
+                    <div className="glass" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <input
+                                type="checkbox"
+                                name="isDeceased"
+                                id="profileIsDeceased"
+                                checked={profile.isDeceased}
+                                onChange={handleChange}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            />
+                            <label htmlFor="profileIsDeceased" style={{ fontSize: '0.85rem', color: 'var(--foreground)', fontWeight: '600', cursor: 'pointer' }}>Mark as Deceased Record</label>
+                        </div>
+
+                        {profile.isDeceased && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1rem' }} className="animate-fade-in">
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>Year of Passing</label>
+                                    <input type="number" name="deathYear" placeholder="e.g. 2005" value={profile.deathYear} onChange={handleChange} className="profile-input" />
+                                </div>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>Month</label>
+                                    <input name="deathMonth" placeholder="e.g. June" value={profile.deathMonth} onChange={handleChange} className="profile-input" />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div style={inputGroup}>

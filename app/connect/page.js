@@ -124,11 +124,16 @@ export default function ConnectPage() {
                                         {person.name.charAt(0)}
                                     </div>
                                     <div>
-                                        <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>{person.name} {person.surname}</h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--foreground)' }}>{person.name} {person.surname}</h3>
+                                            {person.isDeceased && (
+                                                <span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(248, 113, 113, 0.1)', color: '#f87171', fontWeight: 'bold' }}>RESTING</span>
+                                            )}
+                                        </div>
                                         <p style={{ margin: '0.2rem 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                            {person.tribe} • {person.clan || 'No Clan'} • {person.birthPlace}
+                                            {person.tribe} • {person.subTribe || 'No Clan'} • {person.birthPlace}
                                         </p>
-                                        <code style={{ fontSize: '0.75rem', color: '#818cf8', fontWeight: '600' }}>#{person.id}</code>
+                                        <code style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: '600' }}>#{person.id}</code>
                                     </div>
                                 </div>
 
@@ -139,7 +144,7 @@ export default function ConnectPage() {
                                         style={{
                                             background: 'rgba(255,255,255,0.05)',
                                             border: '1px solid var(--border)',
-                                            color: '#fff',
+                                            color: 'var(--foreground)',
                                             padding: '0.65rem 1rem',
                                             borderRadius: '10px',
                                             fontSize: '0.9rem',
@@ -166,16 +171,50 @@ export default function ConnectPage() {
                         ))}
                     </div>
                 ) : (
-                    <div style={{
+                    <div className="glass" style={{
                         textAlign: 'center',
                         padding: '4rem 2rem',
                         background: 'rgba(255,255,255,0.02)',
                         borderRadius: 'var(--radius-lg)',
                         border: '1px dashed var(--border)',
-                        color: 'var(--text-secondary)'
+                        color: 'var(--text-secondary)',
+                        transition: 'all 0.3s ease'
                     }}>
-                        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔎</div>
-                        <p>No family members found yet. Try search by surname or tribe to find your roots.</p>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>🌳</div>
+                        <h3 style={{ color: '#fff', marginBottom: '0.5rem' }}>Map Your Ancestry</h3>
+                        <p style={{ marginBottom: '2rem' }}>Can't find your relative in the network? Add them manually to your lineage to preserve their legacy.</p>
+
+                        <div style={{ maxWidth: '450px', margin: '0 auto', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>Given Name</label>
+                                    <input className="search-input" placeholder="e.g. Obinna" />
+                                </div>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>Surname</label>
+                                    <input className="search-input" placeholder="e.g. Sifuna" />
+                                </div>
+                            </div>
+
+                            <div className="glass" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input type="checkbox" id="addIsDeceased" style={{ width: '16px', height: '16px' }} />
+                                    <label htmlFor="addIsDeceased" style={{ fontSize: '0.85rem', color: '#fff', fontWeight: '600' }}>This family member is deceased</label>
+                                </div>
+                                <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                                    <div style={inputGroup}>
+                                        <label style={labelStyle}>Year of Death</label>
+                                        <input className="search-input" placeholder="Optional" type="number" />
+                                    </div>
+                                    <div style={inputGroup}>
+                                        <label style={labelStyle}>Month</label>
+                                        <input className="search-input" placeholder="Optional" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button className="btn-primary" style={{ padding: '1rem', width: '100%' }}>Add to My Full Tree</button>
+                        </div>
                     </div>
                 )}
             </div>

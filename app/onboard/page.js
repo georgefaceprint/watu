@@ -14,14 +14,27 @@ export default function OnboardPage() {
         clan: '',
         birthPlace: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        isDeceased: false,
+        deathYear: '',
+        deathMonth: '',
+        maidenName: '',
+        sex: ''
     });
 
-    // ... tribes array is below in actual file ...
+    const tribes = [
+        "Kikuyu", "Luhya", "Luo", "Kalenjin", "Kamba", "Kisii", "Meru", "Mijikenda",
+        "Maasai", "Turkana", "Samburu", "Taita", "Pokot", "Basuba", "Teso", "Kuria"
+    ];
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value, type, checked } = e.target;
+        setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
     };
+
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState(null);
+    const router = useRouter();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -34,10 +47,7 @@ export default function OnboardPage() {
             const res = await fetch('/api/onboard', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...formData,
-                    password: formData.password
-                })
+                body: JSON.stringify(formData)
             });
             const data = await res.json();
             if (data.error) throw new Error(data.error);
@@ -53,7 +63,7 @@ export default function OnboardPage() {
     return (
         <div className="container" style={{ minHeight: 'calc(100vh - 160px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="glass animate-fade-in" style={{ width: '100%', maxWidth: '550px', padding: '2.5rem' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.75rem', color: '#fff' }}>Onboard to Watu.Network</h2>
+                <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.75rem', color: 'var(--foreground)' }}>Onboard to Watu.Network</h2>
 
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '2.5rem', justifyContent: 'center' }}>
                     {[1, 2, 3, 4, 5].map(s => (
@@ -78,38 +88,64 @@ export default function OnboardPage() {
 
                 {step === 1 && (
                     <div className="animate-fade-in">
-                        <h3 style={stepTitle}>1. Full Identity Details</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Enter your names as they appear on your legal records. Optional names are welcome.</p>
+                        <h3 style={stepTitle}>1. CORE IDENTITY</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>ENTER YOUR BIOLOGICAL SEX AND LEGAL NAMES TO BEGIN YOUR ANCESTRAL MAPPING.</p>
+
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={inputGroup}>
+                                <label style={labelStyle}>SEX</label>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <label className="glass" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '1rem', border: formData.sex === 'male' ? '2px solid var(--accent)' : '1px solid var(--border)', background: formData.sex === 'male' ? 'var(--accent-muted)' : 'transparent' }}>
+                                        <input type="radio" name="sex" value="male" checked={formData.sex === 'male'} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
+                                        <span style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--foreground)' }}>MALE</span>
+                                    </label>
+                                    <label className="glass" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '1rem', border: formData.sex === 'female' ? '2px solid var(--accent)' : '1px solid var(--border)', background: formData.sex === 'female' ? 'var(--accent-muted)' : 'transparent' }}>
+                                        <input type="radio" name="sex" value="female" checked={formData.sex === 'female'} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
+                                        <span style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--foreground)' }}>FEMALE</span>
+                                    </label>
+                                </div>
+                            </div>
+
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div style={inputGroup}>
-                                    <label style={labelStyle}>Given Name</label>
-                                    <input name="name" placeholder="First Name" value={formData.name} onChange={handleChange} className="input-field" required />
+                                    <label style={labelStyle}>GIVEN NAME</label>
+                                    <input name="name" placeholder="FIRST NAME" value={formData.name} onChange={handleChange} className="input-field" required />
                                 </div>
                                 <div style={inputGroup}>
-                                    <label style={labelStyle}>Surname</label>
-                                    <input name="surname" placeholder="Last Name" value={formData.surname} onChange={handleChange} className="input-field" required />
+                                    <label style={labelStyle}>SURNAME (FAMILY NAME)</label>
+                                    <input name="surname" placeholder="FAMILY NAME" value={formData.surname} onChange={handleChange} className="input-field" required />
                                 </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div style={inputGroup}>
-                                    <label style={labelStyle}>3rd Name <span style={{ opacity: 0.5, fontWeight: 400 }}>(Optional)</span></label>
-                                    <input name="thirdName" placeholder="Middle Name" value={formData.thirdName} onChange={handleChange} className="input-field" />
+                                    <label style={labelStyle}>3RD NAME <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
+                                    <input name="thirdName" placeholder="MIDDLE NAME" value={formData.thirdName} onChange={handleChange} className="input-field" />
                                 </div>
                                 <div style={inputGroup}>
-                                    <label style={labelStyle}>4th Name <span style={{ opacity: 0.5, fontWeight: 400 }}>(Optional)</span></label>
-                                    <input name="fourthName" placeholder="Other Name" value={formData.fourthName} onChange={handleChange} className="input-field" />
+                                    <label style={labelStyle}>4TH NAME <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
+                                    <input name="fourthName" placeholder="OTHER NAME" value={formData.fourthName} onChange={handleChange} className="input-field" />
                                 </div>
                             </div>
-                            <button onClick={() => setStep(2)} className="btn-primary" style={{ marginTop: '0.5rem' }}>Continue to Heritage</button>
+
+                            {formData.sex === 'female' && (
+                                <div style={inputGroup} className="animate-fade-in">
+                                    <label style={labelStyle}>MAIDEN NAME <span style={{ opacity: 0.5, fontWeight: 400 }}>(FAMILY OF BIRTH)</span></label>
+                                    <input name="maidenName" placeholder="MAIDEN FAMILY NAME" value={formData.maidenName} onChange={handleChange} className="input-field" />
+                                </div>
+                            )}
+
+                            <button onClick={() => {
+                                if (!formData.sex) { alert("PLEASE SELECT YOUR SEX FIRST"); return; }
+                                setStep(2);
+                            }} className="btn-primary" style={{ marginTop: '0.5rem' }}>CONTINUE TO HERITAGE</button>
                         </div>
                     </div>
                 )}
 
                 {step === 2 && (
                     <div className="animate-fade-in">
-                        <h3 style={stepTitle}>2. Ancestral Heritage</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Specify your roots to help Watu.Network map your family branch correctly.</p>
+                        <h3 style={stepTitle}>2. Ancestral Heritage & Status</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Specify your roots and life status to help map your family branch correctly.</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             <div style={inputGroup}>
                                 <label style={labelStyle}>Tribe / Ethnic Group</label>
@@ -128,10 +164,39 @@ export default function OnboardPage() {
                                     <input name="clan" value={formData.clan} placeholder="e.g. Kaplelach" onChange={handleChange} className="input-field" />
                                 </div>
                             </div>
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>Place of Birth</label>
-                                <input name="birthPlace" value={formData.birthPlace} placeholder="City, County" onChange={handleChange} className="input-field" />
+
+                            <div className="glass" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: formData.isDeceased ? '1rem' : '0' }}>
+                                    <input
+                                        type="checkbox"
+                                        name="isDeceased"
+                                        id="isDeceased"
+                                        checked={formData.isDeceased}
+                                        onChange={handleChange}
+                                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                    />
+                                    <label htmlFor="isDeceased" style={{ fontSize: '0.9rem', color: '#fff', cursor: 'pointer' }}>Record is for a Deceased Ancestor</label>
+                                </div>
+
+                                {formData.isDeceased && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }} className="animate-fade-in">
+                                        <div style={inputGroup}>
+                                            <label style={labelStyle}>Year of Death</label>
+                                            <input type="number" name="deathYear" placeholder="e.g. 1985" value={formData.deathYear} onChange={handleChange} className="input-field" />
+                                        </div>
+                                        <div style={inputGroup}>
+                                            <label style={labelStyle}>Month (Optional)</label>
+                                            <select name="deathMonth" value={formData.deathMonth} onChange={handleChange} className="input-field">
+                                                <option value="">Unknown</option>
+                                                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                                                    <option key={m} value={m}>{m}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                                 <button onClick={() => setStep(1)} className="btn-secondary" style={{ flex: 1 }}>Back</button>
                                 <button onClick={() => setStep(3)} className="btn-primary" style={{ flex: 1.5 }}>Review Identity</button>
@@ -142,12 +207,13 @@ export default function OnboardPage() {
 
                 {step === 3 && (
                     <div className="animate-fade-in">
-                        <h3 style={stepTitle}>3. Verifying Heritage</h3>
+                        <h3 style={stepTitle}>3. VERIFYING HERITAGE</h3>
                         <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '2rem' }}>
-                            <div style={reviewRow}><strong>Identity:</strong> <span>{formData.name} {formData.thirdName} {formData.fourthName} {formData.surname}</span></div>
-                            <div style={reviewRow}><strong>Ancestry:</strong> <span>{formData.tribe} • {formData.subTribe || 'None'}</span></div>
+                            <div style={reviewRow}><strong>IDENTITY:</strong> <span>[{formData.sex.toUpperCase()}] {formData.name} {formData.thirdName} {formData.fourthName} {formData.surname}</span></div>
+                            {formData.maidenName && <div style={reviewRow}><strong>MAIDEN NAME:</strong> <span>{formData.maidenName}</span></div>}
+                            <div style={reviewRow}><strong>ANCESTRY:</strong> <span>{formData.tribe} • {formData.subTribe || 'NONE'}</span></div>
                             <div style={reviewRow}><strong>Clan:</strong> <span>{formData.clan || 'None'}</span></div>
-                            <div style={reviewRow}><strong>Birthplace:</strong> <span>{formData.birthPlace}</span></div>
+                            <div style={reviewRow}><strong>Status:</strong> <span style={{ color: formData.isDeceased ? '#f87171' : '#4ade80' }}>{formData.isDeceased ? `Deceased (${formData.deathMonth} ${formData.deathYear})` : 'Alive'}</span></div>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
                             <button onClick={() => setStep(2)} className="btn-secondary" style={{ flex: 1 }}>Edit</button>
@@ -200,16 +266,21 @@ export default function OnboardPage() {
                         padding: 0.875rem 1rem;
                         border-radius: 12px;
                         border: 1px solid var(--border);
-                        background: rgba(255,255,255,0.05);
-                        color: white;
+                        background: var(--card);
+                        color: var(--foreground);
                         font-family: inherit;
                         font-size: 1rem;
                         transition: all 0.2s ease;
                         outline: none;
+                        text-transform: uppercase;
+                    }
+                    .input-field::placeholder {
+                        color: var(--text-secondary);
+                        opacity: 0.5;
                     }
                     .input-field:focus {
                         border-color: var(--accent);
-                        background: rgba(255,255,255,0.08);
+                        background: var(--card-hover);
                         box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
                     }
                     select.input-field {
