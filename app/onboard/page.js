@@ -353,7 +353,10 @@ export default function OnboardPage() {
                         </div>
 
                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                            <button onClick={() => router.push('/connect')} className="btn-secondary" style={{ flex: 1 }}>Explore Network</button>
+                            <button onClick={() => {
+                                localStorage.setItem('watu_id', result.id);
+                                router.push('/connect');
+                            }} className="btn-secondary" style={{ flex: 1 }}>Explore Network</button>
                             <button
                                 onClick={() => {
                                     const text = `Join me on Watu.Network! My Ancestral Identity Key is: *${result.id}*. Build your family heritage here: https://watu.network`;
