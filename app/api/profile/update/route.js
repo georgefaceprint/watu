@@ -1,5 +1,6 @@
-import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
+import { executeQuery } from '@/lib/neo4j';
+const cloudinary = require('@/lib/cloudinary');
 
 export async function POST(request) {
     const session = await getServerSession(authOptions);
@@ -9,6 +10,25 @@ export async function POST(request) {
 
         if (!session || (session.user.id !== id && session.user.watuId !== id)) {
             return Response.json({ error: 'Unauthorized profile update attempt' }, { status: 401 });
+        }
+
+        // Handle Image Upload if photo is a base64 string
+        if (fields.photo && fields.photo.startsWith('data:image')) {
+            try {
+                const uploadResponse = await cloudinary.uploader.upload(fields.photo, {
+                    folder: 'watu_profiles',
+                    public_id: `profile_${id}`,
+                    overwrite: true,
+                    invalidate: true,
+                    transformation: [
+                        { width: 500, height: 500, crop: "fill", gravity: "face" }
+                    ]
+                });
+                fields.photo = uploadResponse.secure_url;
+            } catch (uploadErr) {
+                console.error('Cloudinary Upload Error:', uploadErr);
+                return Response.json({ error: 'Failed to upload profile image to cloud' }, { status: 500 });
+            }
         }
 
         // Build dynamic SET clause to avoid overwriting fields with undefined/null if they weren't sent

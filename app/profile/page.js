@@ -41,6 +41,8 @@ export default function ProfilePage() {
             const reader = new FileReader();
             reader.onloadend = () => {
                 setProfilePic(reader.result);
+                // Update profile state to include the base64 for submission
+                setProfile(prev => ({ ...prev, photo: reader.result }));
             };
             reader.readAsDataURL(file);
         }
