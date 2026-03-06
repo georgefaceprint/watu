@@ -3,8 +3,6 @@ import { generateUniqueId } from '@/lib/utils';
 import bcrypt from 'bcryptjs';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(request) {
     try {
         const {
@@ -83,8 +81,9 @@ export async function POST(request) {
 
         if (result && result.length > 0) {
             // Send Welcome Email with Identity Key
-            if (email) {
+            if (email && process.env.RESEND_API_KEY) {
                 try {
+                    const resend = new Resend(process.env.RESEND_API_KEY);
                     await resend.emails.send({
                         from: 'Watu Network <onboarding@watu.network>',
                         to: email,
