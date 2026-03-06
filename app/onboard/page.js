@@ -65,25 +65,39 @@ export default function OnboardPage() {
             <div className="glass animate-fade-in" style={{ width: '100%', maxWidth: '550px', padding: '2.5rem' }}>
                 <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.75rem', color: 'var(--foreground)' }}>Onboard to Watu.Network</h2>
 
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '2.5rem', justifyContent: 'center' }}>
-                    {[1, 2, 3, 4, 5].map(s => (
-                        <div key={s} style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '8px',
-                            background: step >= s ? 'linear-gradient(135deg, var(--accent), var(--accent-secondary))' : 'rgba(255,255,255,0.05)',
-                            color: step >= s ? 'white' : 'var(--text-secondary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.75rem',
-                            fontWeight: '700',
-                            border: step >= s ? 'none' : '1px solid var(--border)',
-                            transition: 'all 0.3s ease'
-                        }}>
-                            {s}
-                        </div>
-                    ))}
+                <div style={{ marginBottom: '2.5rem' }}>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem', justifyContent: 'center' }}>
+                        {[1, 2, 3, 4, 5].map(s => (
+                            <div key={s} style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '8px',
+                                background: step >= s ? 'linear-gradient(135deg, var(--accent), var(--accent-secondary))' : 'rgba(0,0,0,0.05)',
+                                color: step >= s ? 'white' : 'var(--text-secondary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.85rem',
+                                fontWeight: '800',
+                                border: step >= s ? 'none' : '1px solid var(--border)',
+                                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                transform: step === s ? 'scale(1.15)' : 'scale(1)',
+                                boxShadow: step === s ? 'var(--shadow-glow)' : 'none'
+                            }}>
+                                {s}
+                            </div>
+                        ))}
+                    </div>
+                    {/* Progress Bar */}
+                    <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{
+                            width: `${(step / 5) * 100}%`,
+                            height: '100%',
+                            background: 'linear-gradient(to right, var(--accent), var(--accent-secondary))',
+                            transition: 'width 0.6s cubic-bezier(0.65, 0, 0.35, 1)',
+                            borderRadius: '10px'
+                        }} />
+                    </div>
                 </div>
 
                 {step === 1 && (
