@@ -1,5 +1,5 @@
 'use client';
-import FamilyTree from '../components/FamilyTree';
+import FamilyTreeVis from '../components/FamilyTreeVis';
 import { useEffect, useState } from 'react';
 
 export default function HomePage() {
@@ -12,38 +12,29 @@ export default function HomePage() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const sampleData = {
-        name: "Nelson Ndlela",
-        isDeceased: true,
-        deathYear: "1998",
-        deathMonth: "October",
-        children: [
-            {
-                name: "Thabo Ndlela",
-                children: [
-                    { name: "Sipho Ndlela" },
-                    { name: "Nandi Ndlela" }
-                ]
-            },
-            {
-                name: "Zanele Moyo",
-                isDeceased: true,
-                deathYear: "2015",
-                children: [
-                    { name: "Lerato Moyo" },
-                    {
-                        name: "Bheki Moyo",
-                        children: [
-                            { name: "Thandi Moyo" }
-                        ]
-                    }
-                ]
-            },
-            {
-                name: "Kabelo Ndlela"
-            }
-        ]
+    const [treeData, setTreeData] = useState({ nodes: [], links: [] });
+    const [searchId, setSearchId] = useState('');
+    const [loadingTree, setLoadingTree] = useState(false);
+
+    const fetchTree = async (id) => {
+        if (!id) return;
+        setLoadingTree(true);
+        try {
+            const res = await fetch(`/api/tree?personId=${id.toUpperCase()}`);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setTreeData(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoadingTree(false);
+        }
     };
+
+    useEffect(() => {
+        // Fetch a default highlight or use 'USER_123' as demo
+        fetchTree('S7A4B1'); // Seeding with a default highlight if one exists
+    }, []);
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: '3rem', paddingBottom: '100px' }}>
@@ -99,14 +90,41 @@ export default function HomePage() {
             {/* Tree Section */}
             <section style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', padding: '0 1rem' }}>
                 <div className="glass" style={{ padding: '0', overflow: 'hidden' }}>
-                    <div style={{ padding: '2rem 2rem 0 2rem', textAlign: isMobile ? 'center' : 'left' }}>
-                        <h2 style={{ fontSize: '1.5rem', color: '#fff', marginBottom: '0.5rem' }}>Visual Genealogy</h2>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                            Explore our interactive lineage mapper. Search and find connections across any family branch instantly.
-                        </p>
+                    <div style={{ padding: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '2rem' }}>
+                        <div style={{ flex: 1 }}>
+                            <h2 style={{ fontSize: '1.75rem', color: '#fff', marginBottom: '0.5rem' }}>LINEAGE EXPLORER</h2>
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', maxWidth: '450px' }}>
+                                ENTER A UNIQUE WATU ID TO MAP A CLAN BRANCH AND DISCOVER ANCESTRAL CONNECTIONS IN OUR LIVE CRYPTOCURRENCY-BACKED ARCHIVE.
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', minWidth: '320px' }}>
+                            <input
+                                className="search-input"
+                                placeholder="ENTER WATU ID (E.G. S7A4B1)"
+                                value={searchId}
+                                onChange={e => setSearchId(e.target.value)}
+                                style={{ flex: 1, textTransform: 'uppercase' }}
+                            />
+                            <button
+                                className="btn-primary"
+                                style={{ padding: '0 1.5rem' }}
+                                onClick={() => fetchTree(searchId)}
+                                disabled={loadingTree}
+                            >
+                                {loadingTree ? '...' : 'FIND'}
+                            </button>
+                        </div>
                     </div>
-                    <div style={{ minHeight: '500px' }}>
-                        <FamilyTree data={sampleData} />
+                    <div style={{ position: 'relative' }}>
+                        {loadingTree && (
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontWeight: 'bold' }}>
+                                RELAYING ANCESTRAL DATA...
+                            </div>
+                        )}
+                        <FamilyTreeVis data={treeData} onNodeClick={(d) => {
+                            setSearchId(d.id);
+                            fetchTree(d.id);
+                        }} />
                     </div>
                 </div>
             </section>
@@ -158,5 +176,19 @@ const styles = `
         opacity: 1;
         transform: translateY(0);
     }
+}
+.search-input {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--foreground);
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s;
+}
+.search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 `;

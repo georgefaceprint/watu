@@ -6,6 +6,22 @@ export default function ConnectPage() {
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [myId, setMyId] = useState('');
+    const [manualForm, setManualForm] = useState({
+        name: '',
+        surname: '',
+        thirdName: '',
+        fourthName: '',
+        sex: '',
+        maidenName: '',
+        isDeceased: false,
+        deathYear: '',
+        deathMonth: ''
+    });
+
+    const handleManualChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setManualForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    };
 
     const handleSearch = async (e) => {
         e.preventDefault();
@@ -184,36 +200,71 @@ export default function ConnectPage() {
                         <h3 style={{ color: '#fff', marginBottom: '0.5rem' }}>Map Your Ancestry</h3>
                         <p style={{ marginBottom: '2rem' }}>Can't find your relative in the network? Add them manually to your lineage to preserve their legacy.</p>
 
-                        <div style={{ maxWidth: '450px', margin: '0 auto', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>Given Name</label>
-                                    <input className="search-input" placeholder="e.g. Obinna" />
-                                </div>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>Surname</label>
-                                    <input className="search-input" placeholder="e.g. Sifuna" />
+                        <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            {/* SEX SELECTION */}
+                            <div style={inputGroup}>
+                                <label style={labelStyle}>SEX</label>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <label className="glass" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '0.75rem', border: manualForm.sex === 'male' ? '2px solid var(--accent)' : '1px solid var(--border)', background: manualForm.sex === 'male' ? 'var(--accent-muted)' : 'transparent' }}>
+                                        <input type="radio" name="manual_sex" value="male" checked={manualForm.sex === 'male'} onChange={() => setManualForm({ ...manualForm, sex: 'male' })} style={{ width: '16px', height: '16px' }} />
+                                        <span style={{ fontWeight: '700', fontSize: '0.8rem', color: 'var(--foreground)' }}>MALE</span>
+                                    </label>
+                                    <label className="glass" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '0.75rem', border: manualForm.sex === 'female' ? '2px solid var(--accent)' : '1px solid var(--border)', background: manualForm.sex === 'female' ? 'var(--accent-muted)' : 'transparent' }}>
+                                        <input type="radio" name="manual_sex" value="female" checked={manualForm.sex === 'female'} onChange={() => setManualForm({ ...manualForm, sex: 'female' })} style={{ width: '16px', height: '16px' }} />
+                                        <span style={{ fontWeight: '700', fontSize: '0.8rem', color: 'var(--foreground)' }}>FEMALE</span>
+                                    </label>
                                 </div>
                             </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>GIVEN NAME</label>
+                                    <input className="search-input" name="name" placeholder="FIRST NAME" value={manualForm.name} onChange={handleManualChange} />
+                                </div>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>SURNAME (FAMILY NAME)</label>
+                                    <input className="search-input" name="surname" placeholder="FAMILY NAME" value={manualForm.surname} onChange={handleManualChange} />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>3RD NAME <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
+                                    <input className="search-input" name="thirdName" placeholder="MIDDLE NAME" value={manualForm.thirdName} onChange={handleManualChange} />
+                                </div>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>4TH NAME <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
+                                    <input className="search-input" name="fourthName" placeholder="OTHER NAME" value={manualForm.fourthName} onChange={handleManualChange} />
+                                </div>
+                            </div>
+
+                            {manualForm.sex === 'female' && (
+                                <div style={inputGroup} className="animate-fade-in">
+                                    <label style={labelStyle}>MAIDEN NAME <span style={{ opacity: 0.5, fontWeight: 400 }}>(FAMILY OF BIRTH)</span></label>
+                                    <input className="search-input" name="maidenName" placeholder="MAIDEN FAMILY NAME" value={manualForm.maidenName} onChange={handleManualChange} />
+                                </div>
+                            )}
 
                             <div className="glass" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <input type="checkbox" id="addIsDeceased" style={{ width: '16px', height: '16px' }} />
-                                    <label htmlFor="addIsDeceased" style={{ fontSize: '0.85rem', color: '#fff', fontWeight: '600' }}>This family member is deceased</label>
+                                    <input type="checkbox" id="addIsDeceased" name="isDeceased" checked={manualForm.isDeceased} onChange={handleManualChange} style={{ width: '16px', height: '16px' }} />
+                                    <label htmlFor="addIsDeceased" style={{ fontSize: '0.85rem', color: '#fff', fontWeight: '600', textTransform: 'uppercase' }}>This family member is deceased</label>
                                 </div>
-                                <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                                    <div style={inputGroup}>
-                                        <label style={labelStyle}>Year of Death</label>
-                                        <input className="search-input" placeholder="Optional" type="number" />
+                                {manualForm.isDeceased && (
+                                    <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }} className="animate-fade-in">
+                                        <div style={inputGroup}>
+                                            <label style={labelStyle}>Year of Death</label>
+                                            <input name="deathYear" className="search-input" placeholder="YEAR" type="number" value={manualForm.deathYear} onChange={handleManualChange} />
+                                        </div>
+                                        <div style={inputGroup}>
+                                            <label style={labelStyle}>Month</label>
+                                            <input name="deathMonth" className="search-input" placeholder="MONTH" value={manualForm.deathMonth} onChange={handleManualChange} />
+                                        </div>
                                     </div>
-                                    <div style={inputGroup}>
-                                        <label style={labelStyle}>Month</label>
-                                        <input className="search-input" placeholder="Optional" />
-                                    </div>
-                                </div>
+                                )}
                             </div>
 
-                            <button className="btn-primary" style={{ padding: '1rem', width: '100%' }}>Add to My Full Tree</button>
+                            <button className="btn-primary" style={{ padding: '1rem', width: '100%' }}>ADD TO MY FULL TREE</button>
                         </div>
                     </div>
                 )}

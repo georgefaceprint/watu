@@ -1,20 +1,44 @@
-'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import WatuIDCard from '../components/WatuIDCard';
 
 export default function ProfilePage() {
     const fileInputRef = useRef(null);
     const [profilePic, setProfilePic] = useState(null);
     const [profile, setProfile] = useState({
-        name: 'James Sifuna',
-        birthPlace: 'Nairobi, Kenya',
-        birthYear: '1992',
-        residency: 'Mombasa Road, Nairobi',
-        profession: 'Software Engineer',
-        clan: 'Kaplelach',
+        id: '',
+        name: 'LOADING...',
+        surname: '',
+        birthPlace: '',
+        birthYear: '',
+        residency: '',
+        profession: '',
+        clan: '',
+        tribe: '',
         isDeceased: false,
         deathYear: '',
-        deathMonth: ''
+        deathMonth: '',
+        photo: null
     });
+
+    useEffect(() => {
+        const storedId = localStorage.getItem('watu_id');
+        if (storedId) {
+            fetchProfile(storedId);
+        }
+    }, []);
+
+    const fetchProfile = async (id) => {
+        try {
+            const res = await fetch(`/api/tree?personId=${id}`);
+            const data = await res.json();
+            if (data.nodes && data.nodes.length > 0) {
+                const user = data.nodes.find(n => n.id === id);
+                if (user) setProfile({ ...profile, ...user });
+            }
+        } catch (err) {
+            console.error("Failed to load cloud profile:", err);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -34,9 +58,17 @@ export default function ProfilePage() {
 
     return (
         <div className="container" style={{ paddingBottom: '100px' }}>
-            <div style={{ marginBottom: '3rem' }}>
-                <h1 style={{ fontSize: '2.5rem', color: 'var(--foreground)', marginBottom: '0.5rem' }}>Personal Heritage</h1>
-                <p style={{ color: 'var(--text-secondary)', maxWidth: '500px' }}>Complete your profile to build your digital legacy and help relatives find their connection to you.</p>
+            <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+                <h1 style={{ fontSize: '2.5rem', color: 'var(--foreground)', marginBottom: '0.5rem' }}>PERSONAL HERITAGE</h1>
+                <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', margin: '0 auto' }}>BUILD YOUR DIGITAL LEGACY AND ENSURE YOUR PLACE IN THE ANCESTRAL VAULT.</p>
+            </div>
+
+            {/* DIGITAL WATU ID CARD - THE WOW COMPONENT */}
+            <div className="animate-fade-in" style={{ marginBottom: '4rem' }}>
+                <WatuIDCard person={profile} />
+                <p style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 'bold', marginTop: '-1rem', opacity: 0.7 }}>
+                    TIP: CLICK CARD TO FLIP FOR QR VAULT
+                </p>
             </div>
 
             <div className="glass animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem', background: 'var(--card)' }}>

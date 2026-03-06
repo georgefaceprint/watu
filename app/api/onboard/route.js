@@ -4,63 +4,76 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
     try {
-        const { name, surname, thirdName, fourthName, maidenName, tribe, subTribe, clan, birthPlace, birthDate, password, isDeceased, deathYear, deathMonth, sex } = await request.json();
+        const {
+            name, surname, thirdName, fourthName, maidenName, sex, email,
+            tribe, subTribe, clan, birthPlace, password, isDeceased, deathYear, deathMonth
+        } = await request.json();
 
-        if (!name || !surname || !tribe || !password || !sex) {
-            return Response.json({ error: 'Primary Identity, Tribe, Sex, and Password are required' }, { status: 400 });
+        // Basic validation
+        if (!name || !surname || !password || !sex) {
+            return Response.json({ error: 'Required fields (Name, Surname, Password, Sex) are missing.' }, { status: 400 });
         }
 
-        const uniqueId = generateUniqueId();
+        const id = generateUniqueId();
         const passwordHash = await bcrypt.hash(password, 10);
 
         const query = `
             CREATE (p:Person {
-                id: $uniqueId,
+                id: $id,
                 name: $name,
                 surname: $surname,
                 thirdName: $thirdName,
                 fourthName: $fourthName,
                 maidenName: $maidenName,
+                sex: $sex,
+                email: $email,
                 tribe: $tribe,
                 subTribe: $subTribe,
                 clan: $clan,
                 birthPlace: $birthPlace,
-                birthDate: $birthDate,
                 passwordHash: $passwordHash,
                 isCitizen: true,
                 isDeceased: $isDeceased,
                 deathYear: $deathYear,
                 deathMonth: $deathMonth,
-                sex: $sex,
                 createdAt: datetime()
             })
-            RETURN p
+            RETURN p.id as id, p.name as name
         `;
 
-        const records = await executeQuery(query, {
-            uniqueId,
+        const params = {
+            id,
             name,
             surname,
             thirdName: thirdName || '',
             fourthName: fourthName || '',
             maidenName: maidenName || '',
-            tribe,
+            sex,
+            email: email || '',
+            tribe: tribe || '',
             subTribe: subTribe || '',
             clan: clan || '',
             birthPlace: birthPlace || '',
-            birthDate: birthDate || '',
+            passwordHash,
             isDeceased: !!isDeceased,
             deathYear: deathYear || '',
-            deathMonth: deathMonth || '',
-            sex,
-            passwordHash
-        });
+            deathMonth: deathMonth || ''
+        };
 
-        const newUser = records[0].get('p').properties;
-        delete newUser.passwordHash;
-        return Response.json(newUser);
+        const result = await executeQuery(query, params);
+
+        if (result && result.length > 0) {
+            return Response.json({
+                success: true,
+                id: result[0].get('id'),
+                name: result[0].get('name')
+            });
+        }
+
+        throw new Error("Failed to create user in heritage vault.");
+
     } catch (err) {
-        console.error('Onboarding Error:', err);
+        console.error('Onboarding API Error:', err);
         return Response.json({ error: err.message }, { status: 500 });
     }
 }

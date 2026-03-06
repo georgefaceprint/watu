@@ -9,6 +9,9 @@ export default function OnboardPage() {
         surname: '',
         thirdName: '',
         fourthName: '',
+        maidenName: '',
+        email: '',
+        sex: '',
         tribe: '',
         subTribe: '',
         clan: '',
@@ -18,8 +21,6 @@ export default function OnboardPage() {
         isDeceased: false,
         deathYear: '',
         deathMonth: '',
-        maidenName: '',
-        sex: ''
     });
 
     const tribes = [
@@ -34,6 +35,7 @@ export default function OnboardPage() {
 
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
+    const [watuId, setWatuId] = useState(null); // New state for Watu ID
     const router = useRouter();
 
     const handleSubmit = async (e) => {
@@ -52,7 +54,13 @@ export default function OnboardPage() {
             const data = await res.json();
             if (data.error) throw new Error(data.error);
             setResult(data);
-            setStep(5);
+            if (data.id) {
+                setWatuId(data.id);
+                localStorage.setItem('watu_id', data.id); // Store for profile page
+                setStep(5);
+            } else {
+                setStep(5); // Fallback if data.id is not present but success
+            }
         } catch (err) {
             alert(err.message);
         } finally {
@@ -144,9 +152,14 @@ export default function OnboardPage() {
                             {formData.sex === 'female' && (
                                 <div style={inputGroup} className="animate-fade-in">
                                     <label style={labelStyle}>MAIDEN NAME <span style={{ opacity: 0.5, fontWeight: 400 }}>(FAMILY OF BIRTH)</span></label>
-                                    <input name="maidenName" placeholder="MAIDEN FAMILY NAME" value={formData.maidenName} onChange={handleChange} className="input-field" />
+                                    <input placeholder="MAIDEN FAMILY NAME" name="maidenName" value={formData.maidenName} onChange={handleChange} className="input-field" />
                                 </div>
                             )}
+
+                            <div style={inputGroup}>
+                                <label style={labelStyle}>EMAIL ADDRESS <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL TO RECEIVE CREDENTIALS)</span></label>
+                                <input placeholder="E.G. CONTACT@HERITAGE.COM" name="email" value={formData.email} onChange={handleChange} className="input-field" />
+                            </div>
 
                             <button onClick={() => {
                                 if (!formData.sex) { alert("PLEASE SELECT YOUR SEX FIRST"); return; }
