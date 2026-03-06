@@ -1,12 +1,14 @@
-import { executeQuery } from '@/lib/neo4j';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../../auth/[...nextauth]/route";
 
 export async function POST(request) {
+    const session = await getServerSession(authOptions);
     try {
         const body = await request.json();
         const { id, ...fields } = body;
 
-        if (!id) {
-            return Response.json({ error: 'Person ID is required' }, { status: 400 });
+        if (!session || (session.user.id !== id && session.user.watuId !== id)) {
+            return Response.json({ error: 'Unauthorized profile update attempt' }, { status: 401 });
         }
 
         // Build dynamic SET clause to avoid overwriting fields with undefined/null if they weren't sent

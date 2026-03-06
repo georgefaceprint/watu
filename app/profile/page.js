@@ -1,38 +1,21 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
-import WatuIDCard from '../components/WatuIDCard';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
     const fileInputRef = useRef(null);
     const [profilePic, setProfilePic] = useState(null);
-    const [profile, setProfile] = useState({
-        id: '',
-        name: 'LOADING...',
-        surname: '',
-        birthPlace: '',
-        birthYear: '',
-        residency: '',
-        profession: '',
-        clan: '',
-        tribe: '',
-        dob: '',
-        birthOrder: '',
-        phoneCode: '',
-        phoneNumber: '',
-        isDeceased: false,
-        deathYear: '',
-        deathMonth: '',
-        photo: null
-    });
-
-    const [updating, setUpdating] = useState(false);
+    // ... (rest of state stays same)
 
     useEffect(() => {
-        const storedId = localStorage.getItem('watu_id');
-        if (storedId) {
-            fetchProfile(storedId);
+        if (status === 'unauthenticated') {
+            router.push('/login');
+        } else if (session?.user?.id) {
+            fetchProfile(session.user.id);
         }
-    }, []);
+    }, [session, status]);
 
     const fetchProfile = async (id) => {
         try {
