@@ -58,9 +58,9 @@ export default function OnboardPage() {
             if (data.id) {
                 setWatuId(data.id);
                 localStorage.setItem('watu_id', data.id); // Store for profile page
-                setStep(5);
+                setStep(6); // Step 6 = Success screen
             } else {
-                setStep(5); // Fallback if data.id is not present but success
+                setStep(6); // Fallback
             }
         } catch (err) {
             alert(err.message);
