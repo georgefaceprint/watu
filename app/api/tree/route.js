@@ -25,11 +25,18 @@ export async function GET(request) {
                 .id, 
                 .name, 
                 .surname, 
+                .thirdName,
+                .fourthName,
+                .maidenName,
                 .tribe, 
                 .clan, 
                 .sex,
+                .dob,
+                .birthOrder,
+                .birthPlace,
                 .isDeceased, 
                 .deathYear,
+                .deathMonth,
                 type: 'person' 
             }] as persons,
             [r in relationships | { 

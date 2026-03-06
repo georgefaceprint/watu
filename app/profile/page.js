@@ -1,3 +1,4 @@
+'use client';
 import { useState, useRef, useEffect } from 'react';
 import WatuIDCard from '../components/WatuIDCard';
 
@@ -14,6 +15,8 @@ export default function ProfilePage() {
         profession: '',
         clan: '',
         tribe: '',
+        dob: '',
+        birthOrder: '',
         isDeceased: false,
         deathYear: '',
         deathMonth: '',
@@ -150,6 +153,16 @@ export default function ProfilePage() {
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</span>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '600' }}>{profile.isDeceased ? 'Resting' : 'Active Member'}</span>
                             </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Born</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '600' }}>
+                                    {profile.dob || profile.birthYear || 'TBD'}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Order</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '600' }}>{profile.birthOrder || 'Unknown'}</span>
+                            </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Family Branch</span>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '600' }}>Central Branch</span>
@@ -163,6 +176,17 @@ export default function ProfilePage() {
                     <div style={inputGroup}>
                         <label style={labelStyle}>Full Legal Name</label>
                         <input name="name" value={profile.name} onChange={handleChange} className="profile-input" />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={inputGroup}>
+                            <label style={labelStyle}>Date of Birth</label>
+                            <input type="date" name="dob" value={profile.dob} onChange={handleChange} className="profile-input" />
+                        </div>
+                        <div style={inputGroup}>
+                            <label style={labelStyle}>Birth Position</label>
+                            <input name="birthOrder" value={profile.birthOrder} placeholder="e.g. First Born" onChange={handleChange} className="profile-input" />
+                        </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

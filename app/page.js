@@ -1,5 +1,5 @@
 'use client';
-import FamilyTreeVis from '../components/FamilyTreeVis';
+import FamilyTreeVis from './components/FamilyTreeVis';
 import { useEffect, useState } from 'react';
 
 export default function HomePage() {

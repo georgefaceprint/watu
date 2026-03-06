@@ -6,7 +6,9 @@ export async function POST(request) {
     try {
         const {
             name, surname, thirdName, fourthName, maidenName, sex, email,
-            tribe, subTribe, clan, birthPlace, password, isDeceased, deathYear, deathMonth
+            tribe, subTribe, clan, birthPlace, dob, birthOrder,
+            securityQuestion, securityAnswer, password,
+            isDeceased, deathYear, deathMonth
         } = await request.json();
 
         // Basic validation
@@ -16,6 +18,7 @@ export async function POST(request) {
 
         const id = generateUniqueId();
         const passwordHash = await bcrypt.hash(password, 10);
+        const securityAnswerHash = securityAnswer ? await bcrypt.hash(securityAnswer.toLowerCase().trim(), 10) : '';
 
         const query = `
             CREATE (p:Person {
@@ -31,6 +34,10 @@ export async function POST(request) {
                 subTribe: $subTribe,
                 clan: $clan,
                 birthPlace: $birthPlace,
+                dob: $dob,
+                birthOrder: $birthOrder,
+                securityQuestion: $securityQuestion,
+                securityAnswerHash: $securityAnswerHash,
                 passwordHash: $passwordHash,
                 isCitizen: true,
                 isDeceased: $isDeceased,
@@ -54,6 +61,10 @@ export async function POST(request) {
             subTribe: subTribe || '',
             clan: clan || '',
             birthPlace: birthPlace || '',
+            dob: dob || '',
+            birthOrder: birthOrder || '',
+            securityQuestion: securityQuestion || '',
+            securityAnswerHash,
             passwordHash,
             isDeceased: !!isDeceased,
             deathYear: deathYear || '',

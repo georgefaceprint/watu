@@ -12,10 +12,11 @@ export default function OnboardPage() {
         maidenName: '',
         email: '',
         sex: '',
-        tribe: '',
-        subTribe: '',
-        clan: '',
+        dob: '',
+        birthOrder: '',
         birthPlace: '',
+        securityQuestion: '',
+        securityAnswer: '',
         password: '',
         confirmPassword: '',
         isDeceased: false,
@@ -75,7 +76,7 @@ export default function OnboardPage() {
 
                 <div style={{ marginBottom: '2.5rem' }}>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem', justifyContent: 'center' }}>
-                        {[1, 2, 3, 4, 5].map(s => (
+                        {[1, 2, 3, 4, 5, 6].map(s => (
                             <div key={s} style={{
                                 width: '28px',
                                 height: '28px',
@@ -99,7 +100,7 @@ export default function OnboardPage() {
                     {/* Progress Bar */}
                     <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
                         <div style={{
-                            width: `${(step / 5) * 100}%`,
+                            width: `${(step / 6) * 100}%`,
                             height: '100%',
                             background: 'linear-gradient(to right, var(--accent), var(--accent-secondary))',
                             transition: 'width 0.6s cubic-bezier(0.65, 0, 0.35, 1)',
@@ -171,7 +172,46 @@ export default function OnboardPage() {
 
                 {step === 2 && (
                     <div className="animate-fade-in">
-                        <h3 style={stepTitle}>2. Ancestral Heritage & Status</h3>
+                        <h3 style={stepTitle}>2. LIFE DETAILS (OPTIONAL)</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>THESE DETAILS HELP VERIFY YOUR BRANCH IN FAMILY TREES AND VALIDATE ANCESTRAL CLAIMS.</p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={inputGroup}>
+                                <label style={labelStyle}>DATE OF BIRTH</label>
+                                <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="input-field" />
+                            </div>
+
+                            <div style={inputGroup}>
+                                <label style={labelStyle}>PLACE OF BIRTH</label>
+                                <input name="birthPlace" value={formData.birthPlace} placeholder="E.G. NAIROBI, KENYA" onChange={handleChange} className="input-field" />
+                            </div>
+
+                            <div style={inputGroup}>
+                                <label style={labelStyle}>BIRTH POSITION (ORDER)</label>
+                                <select name="birthOrder" value={formData.birthOrder} onChange={handleChange} className="input-field">
+                                    <option value="">SELECT OPTION</option>
+                                    <option value="first">FIRST BORN</option>
+                                    <option value="second">SECOND BORN</option>
+                                    <option value="third">THIRD BORN</option>
+                                    <option value="fourth">FOURTH BORN</option>
+                                    <option value="fifth">FIFTH BORN</option>
+                                    <option value="last">LAST BORN</option>
+                                    <option value="middle">MIDDLE CHILD</option>
+                                    <option value="only">ONLY CHILD</option>
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                                <button onClick={() => setStep(1)} className="btn-secondary" style={{ flex: 1 }}>BACK</button>
+                                <button onClick={() => setStep(3)} className="btn-primary" style={{ flex: 1.5 }}>CONTINUE TO ROOTS</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {step === 3 && (
+                    <div className="animate-fade-in">
+                        <h3 style={stepTitle}>3. ANCESTRAL ROOTS</h3>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Specify your roots and life status to help map your family branch correctly.</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             <div style={inputGroup}>
@@ -225,33 +265,33 @@ export default function OnboardPage() {
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                                <button onClick={() => setStep(1)} className="btn-secondary" style={{ flex: 1 }}>Back</button>
-                                <button onClick={() => setStep(3)} className="btn-primary" style={{ flex: 1.5 }}>Review Identity</button>
+                                <button onClick={() => setStep(2)} className="btn-secondary" style={{ flex: 1 }}>Back</button>
+                                <button onClick={() => setStep(4)} className="btn-primary" style={{ flex: 1.5 }}>Review Identity</button>
                             </div>
-                        </div>
-                    </div>
-                )}
-
-                {step === 3 && (
-                    <div className="animate-fade-in">
-                        <h3 style={stepTitle}>3. VERIFYING HERITAGE</h3>
-                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '2rem' }}>
-                            <div style={reviewRow}><strong>IDENTITY:</strong> <span>[{formData.sex.toUpperCase()}] {formData.name} {formData.thirdName} {formData.fourthName} {formData.surname}</span></div>
-                            {formData.maidenName && <div style={reviewRow}><strong>MAIDEN NAME:</strong> <span>{formData.maidenName}</span></div>}
-                            <div style={reviewRow}><strong>ANCESTRY:</strong> <span>{formData.tribe} • {formData.subTribe || 'NONE'}</span></div>
-                            <div style={reviewRow}><strong>Clan:</strong> <span>{formData.clan || 'None'}</span></div>
-                            <div style={reviewRow}><strong>Status:</strong> <span style={{ color: formData.isDeceased ? '#f87171' : '#4ade80' }}>{formData.isDeceased ? `Deceased (${formData.deathMonth} ${formData.deathYear})` : 'Alive'}</span></div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button onClick={() => setStep(2)} className="btn-secondary" style={{ flex: 1 }}>Edit</button>
-                            <button onClick={() => setStep(4)} className="btn-primary" style={{ flex: 2 }}>Confirm and Set Security</button>
                         </div>
                     </div>
                 )}
 
                 {step === 4 && (
                     <div className="animate-fade-in">
-                        <h3 style={stepTitle}>4. Account Security</h3>
+                        <h3 style={stepTitle}>4. VERIFYING HERITAGE</h3>
+                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '2rem' }}>
+                            <div style={reviewRow}><strong>IDENTITY:</strong> <span>[{formData.sex.toUpperCase()}] {formData.name} {formData.surname}</span></div>
+                            <div style={reviewRow}><strong>BORN:</strong> <span>{formData.dob || 'NOT SET'} • {formData.birthOrder || 'ORDER UNKNOWN'}</span></div>
+                            <div style={reviewRow}><strong>PLACE:</strong> <span>{formData.birthPlace || 'NOT SET'}</span></div>
+                            <div style={reviewRow}><strong>ANCESTRY:</strong> <span>{formData.tribe} • {formData.subTribe || 'NONE'}</span></div>
+                            <div style={reviewRow}><strong>STATUS:</strong> <span style={{ color: formData.isDeceased ? '#f87171' : '#4ade80' }}>{formData.isDeceased ? `DECEASED` : 'ALIVE'}</span></div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => setStep(3)} className="btn-secondary" style={{ flex: 1 }}>Edit</button>
+                            <button onClick={() => setStep(5)} className="btn-primary" style={{ flex: 2 }}>Confirm and Set Security</button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 5 && (
+                    <div className="animate-fade-in">
+                        <h3 style={stepTitle}>5. Account Security</h3>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Secure your Watu ID for future access.</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             <div style={inputGroup}>
@@ -262,8 +302,27 @@ export default function OnboardPage() {
                                 <label style={labelStyle}>Confirm Password</label>
                                 <input type="password" name="confirmPassword" placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} className="input-field" />
                             </div>
+
+                            <div style={{ padding: '1.25rem', background: 'var(--accent-muted)', borderRadius: '15px', border: '1px dashed var(--accent)', marginTop: '0.5rem' }}>
+                                <p style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: '800', marginBottom: '1rem' }}>RECOVERY FOR USERS WITHOUT EMAIL</p>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>SELECT RECOVERY QUESTION</label>
+                                    <select name="securityQuestion" value={formData.securityQuestion} onChange={handleChange} className="input-field">
+                                        <option value="">SELECT A QUESTION</option>
+                                        <option value="mother">WHAT IS YOUR MOTHER'S MAIDEN NAME?</option>
+                                        <option value="village">WHAT IS THE NAME OF YOUR ANCESTRAL VILLAGE?</option>
+                                        <option value="pet">WHAT WAS YOUR FIRST PET'S NAME?</option>
+                                        <option value="school">WHAT SCHOOL DID YOUR FATHER ATTEND?</option>
+                                    </select>
+                                </div>
+                                <div style={{ ...inputGroup, marginTop: '1rem' }}>
+                                    <label style={labelStyle}>YOUR SECRET ANSWER</label>
+                                    <input name="securityAnswer" placeholder="ENTER SECRET ANSWER" value={formData.securityAnswer} onChange={handleChange} className="input-field" />
+                                </div>
+                            </div>
+
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                                <button onClick={() => setStep(3)} className="btn-secondary" style={{ flex: 1 }}>Back</button>
+                                <button onClick={() => setStep(4)} className="btn-secondary" style={{ flex: 1 }}>Back</button>
                                 <button onClick={handleSubmit} className="btn-primary" style={{ flex: 2 }} disabled={loading}>
                                     {loading ? 'Processing...' : 'Complete Account'}
                                 </button>
@@ -272,7 +331,7 @@ export default function OnboardPage() {
                     </div>
                 )}
 
-                {step === 5 && result && (
+                {step === 6 && result && (
                     <div className="animate-fade-in" style={{ textAlign: 'center' }}>
                         <div style={{ width: '80px', height: '80px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', margin: '0 auto 1.5rem auto' }}>✓</div>
                         <h3 style={{ fontSize: '1.5rem', color: '#fff' }}>Identity Confirmed!</h3>

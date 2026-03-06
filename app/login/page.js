@@ -10,6 +10,74 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
+    // Recovery State
+    const [showRecovery, setShowRecovery] = useState(false);
+    const [recoveryStep, setRecoveryStep] = useState(1);
+    const [recoveryId, setRecoveryId] = useState('');
+    const [recoveryQuestion, setRecoveryQuestion] = useState('');
+    const [recoveryAnswer, setRecoveryAnswer] = useState('');
+    const [recoveryToken, setRecoveryToken] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [recoveryError, setRecoveryError] = useState('');
+
+    const fetchQuestion = async () => {
+        setLoading(true);
+        setRecoveryError('');
+        try {
+            const res = await fetch(`/api/auth/recover?id=${recoveryId}`);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setRecoveryQuestion(data.question || 'NO SECURITY QUESTION ON RECORD');
+            setRecoveryStep(2);
+        } catch (err) {
+            setRecoveryError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const verifyAnswer = async () => {
+        setLoading(true);
+        setRecoveryError('');
+        try {
+            const res = await fetch('/api/auth/recover', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: recoveryId, answer: recoveryAnswer })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setRecoveryToken(data.token);
+            setRecoveryStep(3);
+        } catch (err) {
+            setRecoveryError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReset = async () => {
+        setLoading(true);
+        setRecoveryError('');
+        try {
+            const res = await fetch('/api/auth/recover/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: recoveryId, token: recoveryToken, password: newPassword })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            // Auto login or close
+            setShowRecovery(false);
+            alert("IDENTITY SECURED. PASSWORD UPDATED.");
+        } catch (err) {
+            setRecoveryError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -111,7 +179,17 @@ export default function LoginPage() {
                     </div>
 
                     <div style={inputGroup}>
-                        <label style={labelStyle}>Security Password</label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <label style={labelStyle}>Security Password</label>
+                            <span
+                                onClick={() => setShowRecovery(true)}
+                                style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: '800', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                                onMouseEnter={(e) => e.target.style.opacity = '0.7'}
+                                onMouseLeave={(e) => e.target.style.opacity = '1'}
+                            >
+                                FORGOT IDENTITY?
+                            </span>
+                        </div>
                         <input
                             type="password"
                             placeholder="••••••••"
@@ -131,6 +209,83 @@ export default function LoginPage() {
                         {loading ? 'Authenticating...' : 'Sign In with Watu ID'}
                     </button>
                 </form>
+
+                {/* HERITAGE RECOVERY MODAL */}
+                {showRecovery && (
+                    <div style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+                        zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+                    }} className="animate-fade-in">
+                        <div className="glass" style={{ width: '100%', maxWidth: '400px', padding: '2.5rem', position: 'relative' }}>
+                            <button
+                                onClick={() => { setShowRecovery(false); setRecoveryStep(1); setRecoveryError(''); }}
+                                style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}
+                            >✕</button>
+
+                            <h2 style={{ fontSize: '1.5rem', color: '#fff', marginBottom: '0.5rem', textAlign: 'center' }}>HERITAGE RECOVERY</h2>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textAlign: 'center', marginBottom: '2rem' }}>RE-ESTABLISHING IDENTITY WITHOUT EMAIL</p>
+
+                            {recoveryError && (
+                                <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', padding: '12px', borderRadius: '12px', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
+                                    ⚠️ {recoveryError}
+                                </div>
+                            )}
+
+                            {recoveryStep === 1 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    <div style={inputGroup}>
+                                        <label style={labelStyle}>ENTER YOUR WATU ID</label>
+                                        <input
+                                            placeholder="W-XXXX-XXXX"
+                                            className="auth-input"
+                                            value={recoveryId}
+                                            onChange={(e) => setRecoveryId(e.target.value.toUpperCase())}
+                                        />
+                                    </div>
+                                    <button onClick={fetchQuestion} disabled={loading} className="btn-primary">
+                                        {loading ? 'RELAYING...' : 'RELAY SECURITY QUESTION'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {recoveryStep === 2 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    <div style={inputGroup}>
+                                        <label style={labelStyle}>SECRET QUESTION</label>
+                                        <p style={{ color: 'var(--accent)', fontWeight: '800', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{recoveryQuestion.toUpperCase()}</p>
+                                        <input
+                                            placeholder="ENTER YOUR SECRET ANSWER"
+                                            className="auth-input"
+                                            value={recoveryAnswer}
+                                            onChange={(e) => setRecoveryAnswer(e.target.value)}
+                                        />
+                                    </div>
+                                    <button onClick={verifyAnswer} disabled={loading} className="btn-primary">
+                                        {loading ? 'VERIFYING...' : 'VERIFY IDENTITY'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {recoveryStep === 3 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    <div style={inputGroup}>
+                                        <label style={labelStyle}>SET NEW PASSWORD</label>
+                                        <input
+                                            type="password"
+                                            placeholder="••••••••"
+                                            className="auth-input"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                        />
+                                    </div>
+                                    <button onClick={handleReset} disabled={loading} className="btn-primary">
+                                        {loading ? 'RESETTING...' : 'RESET PASSWORD & LOGIN'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.9rem' }}>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Don't have a Watu ID yet?</p>
