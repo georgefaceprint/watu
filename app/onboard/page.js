@@ -18,6 +18,9 @@ export default function OnboardPage() {
         dob: '',
         birthOrder: '',
         birthPlace: '',
+        tribe: '',
+        subTribe: '',
+        clan: '',
         securityQuestion: '',
         securityAnswer: '',
         password: '',
@@ -118,9 +121,9 @@ export default function OnboardPage() {
             if (data.id) {
                 setWatuId(data.id);
                 localStorage.setItem('watu_id', data.id); // Store for profile page
-                setStep(6); // Step 6 = Success screen
+                setStep(4); // Step 4 = Success screen
             } else {
-                setStep(6); // Fallback
+                setStep(4); // Fallback
             }
         } catch (err) {
             alert(err.message);
@@ -136,17 +139,17 @@ export default function OnboardPage() {
 
                 <div style={{ marginBottom: '2.5rem' }}>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem', justifyContent: 'center' }}>
-                        {[1, 2, 3, 4, 5, 6].map(s => (
+                        {[1, 2, 3].map(s => (
                             <div key={s} style={{
-                                width: '28px',
-                                height: '28px',
-                                borderRadius: '8px',
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '10px',
                                 background: step >= s ? 'linear-gradient(135deg, var(--accent), var(--accent-secondary))' : 'rgba(0,0,0,0.05)',
                                 color: step >= s ? 'white' : 'var(--text-secondary)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '0.85rem',
+                                fontSize: '0.9rem',
                                 fontWeight: '800',
                                 border: step >= s ? 'none' : '1px solid var(--border)',
                                 transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
@@ -160,7 +163,7 @@ export default function OnboardPage() {
                     {/* Progress Bar */}
                     <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
                         <div style={{
-                            width: `${(step / 6) * 100}%`,
+                            width: `${Math.min((step / 3) * 100, 100)}%`,
                             height: '100%',
                             background: 'linear-gradient(to right, var(--accent), var(--accent-secondary))',
                             transition: 'width 0.6s cubic-bezier(0.65, 0, 0.35, 1)',
@@ -250,8 +253,73 @@ export default function OnboardPage() {
                             )}
 
                             <div style={inputGroup}>
-                                <label style={labelStyle}>EMAIL ADDRESS <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL — TO RECEIVE CREDENTIALS)</span></label>
+                                <label style={labelStyle}>EMAIL ADDRESS <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
                                 <input placeholder="E.G. CONTACT@HERITAGE.COM" name="email" value={formData.email} onChange={handleChange} className="input-field" />
+                            </div>
+
+                            <div style={inputGroup}>
+                                <label style={labelStyle}>TRIBE / ETHNIC GROUP</label>
+                                <select name="tribe" value={formData.tribe} onChange={handleChange} className="input-field" style={{ appearance: 'none' }}>
+                                    <option value="">SELECT YOUR TRIBE</option>
+                                    {registry.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+                                </select>
+                            </div>
+
+                            <button onClick={() => {
+                                if (!formData.sex) { alert("PLEASE SELECT YOUR SEX FIRST"); return; }
+                                if (!formData.name || !formData.surname) { alert("PLEASE ENTER YOUR NAMES"); return; }
+                                if (!formData.tribe) { alert("PLEASE SELECT YOUR TRIBE"); return; }
+                                setStep(2);
+                            }} className="btn-primary" style={{ marginTop: '0.5rem' }}>CONTINUE TO HERITAGE</button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 2 && (
+                    <div className="animate-fade-in">
+                        <h3 style={stepTitle}>2. ANCESTRAL LEGACY</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>THESE DETAILS HELP MAP YOUR FAMILY BRANCH CORRECTLY.</p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>SUB-TRIBE / GROUP</label>
+                                    {selectedTribeData && selectedTribeData.subGroups.length > 0 ? (
+                                        <select name="subTribe" value={formData.subTribe} onChange={handleChange} className="input-field">
+                                            <option value="">SELECT OPTION</option>
+                                            {selectedTribeData.subGroups.map(sg => (
+                                                <option key={sg} value={sg}>{sg}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input name="subTribe" value={formData.subTribe} placeholder="E.G. BUKUSU" onChange={handleChange} className="input-field" />
+                                    )}
+                                </div>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>CLAN</label>
+                                    <input name="clan" value={formData.clan} placeholder="E.G. KAPLELACH" onChange={handleChange} className="input-field" />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>BIRTH POSITION (ORDER)</label>
+                                    <select name="birthOrder" value={formData.birthOrder} onChange={handleChange} className="input-field">
+                                        <option value="">SELECT OPTION</option>
+                                        <option value="first">FIRST BORN</option>
+                                        <option value="second">SECOND BORN</option>
+                                        <option value="third">THIRD BORN</option>
+                                        <option value="fourth">FOURTH BORN</option>
+                                        <option value="fifth">FIFTH BORN</option>
+                                        <option value="last">LAST BORN</option>
+                                        <option value="middle">MIDDLE CHILD</option>
+                                        <option value="only">ONLY CHILD</option>
+                                    </select>
+                                </div>
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>PLACE OF BIRTH</label>
+                                    <input name="birthPlace" value={formData.birthPlace} placeholder="NAIROBI, KENYA" onChange={handleChange} className="input-field" />
+                                </div>
                             </div>
 
                             <div style={inputGroup}>
@@ -287,86 +355,7 @@ export default function OnboardPage() {
                                 </div>
                             </div>
 
-                            <button onClick={() => {
-                                if (!formData.sex) { alert("PLEASE SELECT YOUR SEX FIRST"); return; }
-                                setStep(2);
-                            }} className="btn-primary" style={{ marginTop: '0.5rem' }}>CONTINUE TO HERITAGE</button>
-                        </div>
-                    </div>
-                )}
-
-                {step === 2 && (
-                    <div className="animate-fade-in">
-                        <h3 style={stepTitle}>2. LIFE DETAILS (OPTIONAL)</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>THESE DETAILS HELP VERIFY YOUR BRANCH IN FAMILY TREES AND VALIDATE ANCESTRAL CLAIMS.</p>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>DATE OF BIRTH</label>
-                                <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="input-field" />
-                            </div>
-
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>PLACE OF BIRTH</label>
-                                <input name="birthPlace" value={formData.birthPlace} placeholder="E.G. NAIROBI, KENYA" onChange={handleChange} className="input-field" />
-                            </div>
-
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>BIRTH POSITION (ORDER)</label>
-                                <select name="birthOrder" value={formData.birthOrder} onChange={handleChange} className="input-field">
-                                    <option value="">SELECT OPTION</option>
-                                    <option value="first">FIRST BORN</option>
-                                    <option value="second">SECOND BORN</option>
-                                    <option value="third">THIRD BORN</option>
-                                    <option value="fourth">FOURTH BORN</option>
-                                    <option value="fifth">FIFTH BORN</option>
-                                    <option value="last">LAST BORN</option>
-                                    <option value="middle">MIDDLE CHILD</option>
-                                    <option value="only">ONLY CHILD</option>
-                                </select>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                                <button onClick={() => setStep(1)} className="btn-secondary" style={{ flex: 1 }}>BACK</button>
-                                <button onClick={() => setStep(3)} className="btn-primary" style={{ flex: 1.5 }}>CONTINUE TO ROOTS</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {step === 3 && (
-                    <div className="animate-fade-in">
-                        <h3 style={stepTitle}>3. ANCESTRAL ROOTS</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Specify your roots and life status to help map your family branch correctly.</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>Tribe / Ethnic Group</label>
-                                <select name="tribe" value={formData.tribe} onChange={handleChange} className="input-field" style={{ appearance: 'none' }}>
-                                    <option value="">Select Option</option>
-                                    {registry.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
-                                </select>
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>Sub-tribe / Group</label>
-                                    {selectedTribeData && selectedTribeData.subGroups.length > 0 ? (
-                                        <select name="subTribe" value={formData.subTribe} onChange={handleChange} className="input-field">
-                                            <option value="">Select Option</option>
-                                            {selectedTribeData.subGroups.map(sg => (
-                                                <option key={sg} value={sg}>{sg}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <input name="subTribe" value={formData.subTribe} placeholder="e.g. Bukusu" onChange={handleChange} className="input-field" />
-                                    )}
-                                </div>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>Clan</label>
-                                    <input name="clan" value={formData.clan} placeholder="e.g. Kaplelach" onChange={handleChange} className="input-field" />
-                                </div>
-                            </div>
-
-                            <div className="glass" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border)' }}>
+                            <div className="glass" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border)', borderRadius: '15px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: formData.isDeceased ? '1rem' : '0' }}>
                                     <input
                                         type="checkbox"
@@ -376,21 +365,21 @@ export default function OnboardPage() {
                                         onChange={handleChange}
                                         style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                                     />
-                                    <label htmlFor="isDeceased" style={{ fontSize: '0.9rem', color: '#fff', cursor: 'pointer' }}>Record is for a Deceased Ancestor</label>
+                                    <label htmlFor="isDeceased" style={{ fontSize: '0.9rem', color: '#fff', cursor: 'pointer', fontWeight: 'bold' }}>RECORD IS FOR A DECEASED ANCESTOR</label>
                                 </div>
 
                                 {formData.isDeceased && (
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }} className="animate-fade-in">
                                         <div style={inputGroup}>
-                                            <label style={labelStyle}>Year of Death</label>
-                                            <input type="number" name="deathYear" placeholder="e.g. 1985" value={formData.deathYear} onChange={handleChange} className="input-field" />
+                                            <label style={labelStyle}>YEAR OF DEATH</label>
+                                            <input type="number" name="deathYear" placeholder="E.G. 1985" value={formData.deathYear} onChange={handleChange} className="input-field" />
                                         </div>
                                         <div style={inputGroup}>
-                                            <label style={labelStyle}>Month (Optional)</label>
+                                            <label style={labelStyle}>MONTH (OPTIONAL)</label>
                                             <select name="deathMonth" value={formData.deathMonth} onChange={handleChange} className="input-field">
-                                                <option value="">Unknown</option>
+                                                <option value="">UNKNOWN</option>
                                                 {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                                                    <option key={m} value={m}>{m}</option>
+                                                    <option key={m} value={m}>{m.toUpperCase()}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -399,53 +388,37 @@ export default function OnboardPage() {
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                                <button onClick={() => setStep(2)} className="btn-secondary" style={{ flex: 1 }}>Back</button>
-                                <button onClick={() => setStep(4)} className="btn-primary" style={{ flex: 1.5 }}>Review Identity</button>
+                                <button onClick={() => setStep(1)} className="btn-secondary" style={{ flex: 1 }}>BACK</button>
+                                <button
+                                    onClick={() => {
+                                        if (status === 'authenticated') {
+                                            handleSubmit();
+                                        } else {
+                                            setStep(3);
+                                        }
+                                    }}
+                                    className="btn-primary"
+                                    style={{ flex: 2 }}
+                                    disabled={loading}
+                                >
+                                    {status === 'authenticated' ? (loading ? 'PROCESSING...' : 'COMPLETE HERITAGE') : 'NEXT: SECURE ACCOUNT'}
+                                </button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {step === 4 && (
+                {step === 3 && (
                     <div className="animate-fade-in">
-                        <h3 style={stepTitle}>4. VERIFYING HERITAGE</h3>
-                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', marginBottom: '2rem' }}>
-                            <div style={reviewRow}><strong>IDENTITY:</strong> <span>[{formData.sex.toUpperCase()}] {formData.name} {formData.surname}</span></div>
-                            <div style={reviewRow}><strong>BORN:</strong> <span>{formData.dob || 'NOT SET'} • {formData.birthOrder || 'ORDER UNKNOWN'}</span></div>
-                            <div style={reviewRow}><strong>PLACE:</strong> <span>{formData.birthPlace || 'NOT SET'}</span></div>
-                            <div style={reviewRow}><strong>ANCESTRY:</strong> <span>{formData.tribe} • {formData.subTribe || 'NONE'}</span></div>
-                            <div style={reviewRow}><strong>STATUS:</strong> <span style={{ color: formData.isDeceased ? '#f87171' : '#4ade80' }}>{formData.isDeceased ? `DECEASED` : 'ALIVE'}</span></div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button onClick={() => setStep(3)} className="btn-secondary" style={{ flex: 1 }}>Edit</button>
-                            <button
-                                onClick={() => {
-                                    if (status === 'authenticated') {
-                                        handleSubmit();
-                                    } else {
-                                        setStep(5);
-                                    }
-                                }}
-                                className="btn-primary"
-                                style={{ flex: 2 }}
-                            >
-                                {status === 'authenticated' ? (loading ? 'Processing...' : 'Complete Heritage') : 'Confirm and Set Security'}
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {step === 5 && (
-                    <div className="animate-fade-in">
-                        <h3 style={stepTitle}>5. Account Security</h3>
+                        <h3 style={stepTitle}>3. ACCOUNT SECURITY</h3>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Secure your Watu ID for future access.</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             <div style={inputGroup}>
-                                <label style={labelStyle}>Password</label>
+                                <label style={labelStyle}>PASSWORD</label>
                                 <input type="password" name="password" placeholder="••••••••" value={formData.password} onChange={handleChange} className="input-field" />
                             </div>
                             <div style={inputGroup}>
-                                <label style={labelStyle}>Confirm Password</label>
+                                <label style={labelStyle}>CONFIRM PASSWORD</label>
                                 <input type="password" name="confirmPassword" placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} className="input-field" />
                             </div>
 
@@ -468,16 +441,16 @@ export default function OnboardPage() {
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                                <button onClick={() => setStep(4)} className="btn-secondary" style={{ flex: 1 }}>Back</button>
+                                <button onClick={() => setStep(2)} className="btn-secondary" style={{ flex: 1 }}>BACK</button>
                                 <button onClick={handleSubmit} className="btn-primary" style={{ flex: 2 }} disabled={loading}>
-                                    {loading ? 'Processing...' : 'Complete Account'}
+                                    {loading ? 'PROCESSING...' : 'COMPLETE ACCOUNT'}
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {step === 6 && result && (
+                {step === 4 && result && (
                     <div className="animate-fade-in" style={{ textAlign: 'center' }}>
                         <div style={{ width: '80px', height: '80px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', margin: '0 auto 1.5rem auto' }}>✓</div>
                         <h3 style={{ fontSize: '1.5rem', color: '#fff' }}>Identity Confirmed!</h3>
