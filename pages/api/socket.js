@@ -1,12 +1,15 @@
 import { Server } from 'socket.io';
 
-const ioHandler = (req, res) => {
-    if (!res.socket.server.io) {
-        console.log('Initializing Socket.io server...');
+const SocketHandler = (req, res) => {
+    if (res.socket.server.io) {
+        console.log('Socket is already running');
+    } else {
+        console.log('Socket is initializing');
         const io = new Server(res.socket.server, {
-            path: '/api/chat/socket',
+            path: '/api/socket',
             addTrailingSlash: false,
         });
+        res.socket.server.io = io;
 
         io.on('connection', (socket) => {
             console.log('User connected:', socket.id);
@@ -25,11 +28,8 @@ const ioHandler = (req, res) => {
                 console.log('User disconnected:', socket.id);
             });
         });
-
-        res.socket.server.io = io;
     }
     res.end();
 };
 
-export const GET = ioHandler;
-export const POST = ioHandler;
+export default SocketHandler;

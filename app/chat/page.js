@@ -23,9 +23,9 @@ export default function ChatPage() {
 
     useEffect(() => {
         // Initialize socket connection
-        fetch('/api/chat/socket').finally(() => {
+        fetch('/api/socket').finally(() => {
             const socket = io({
-                path: '/api/chat/socket',
+                path: '/api/socket',
             });
             socketRef.current = socket;
 

@@ -25,6 +25,8 @@ export default function ProfilePage() {
         photo: null
     });
 
+    const [updating, setUpdating] = useState(false);
+
     useEffect(() => {
         const storedId = localStorage.getItem('watu_id');
         if (storedId) {
@@ -58,6 +60,25 @@ export default function ProfilePage() {
                 setProfilePic(reader.result);
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        if (e) e.preventDefault();
+        setUpdating(true);
+        try {
+            const res = await fetch('/api/profile/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(profile)
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            alert('✅ HERITAGE RECORDS UPDATED IN VAULT');
+        } catch (err) {
+            alert('❌ UPDATE FAILED: ' + err.message);
+        } finally {
+            setUpdating(false);
         }
     };
 
@@ -263,7 +284,14 @@ export default function ProfilePage() {
                         <input name="profession" value={profile.profession} onChange={handleChange} className="profile-input" />
                     </div>
 
-                    <button className="btn-primary" style={{ padding: '1rem', marginTop: '1rem', width: '100%' }}>Update Heritage Records</button>
+                    <button
+                        onClick={handleSubmit}
+                        className="btn-primary"
+                        disabled={updating}
+                        style={{ padding: '1rem', marginTop: '1rem', width: '100%' }}
+                    >
+                        {updating ? 'SAVING TO VAULT...' : 'Update Heritage Records'}
+                    </button>
 
                     <input type="file" accept="image/*" ref={fileInputRef} onChange={handlePhotoChange} style={{ display: 'none' }} />
                 </div>
