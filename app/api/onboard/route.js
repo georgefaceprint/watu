@@ -4,59 +4,59 @@ import bcrypt from 'bcryptjs';
 import { Resend } from 'resend';
 
 export async function POST(request) {
-    let {
-        name, surname, thirdName, fourthName, maidenName, sex, email,
-        phoneCode, phoneNumber,
-        tribe, subTribe, clan, birthPlace, dob, birthOrder,
-        securityQuestion, securityAnswer, password,
-        isDeceased, deathYear, deathMonth
-    } = await request.json();
+    try {
+        let {
+            name, surname, thirdName, fourthName, maidenName, sex, email,
+            phoneCode, phoneNumber,
+            tribe, subTribe, clan, birthPlace, dob, birthOrder,
+            securityQuestion, securityAnswer, password,
+            isDeceased, deathYear, deathMonth
+        } = await request.json();
 
-    // 1. Sanitization & Normalization
-    const trim = (str) => (str ? str.trim() : '');
-    const toTitleCase = (str) => str ? str.split(' ').map(w => w[0].toUpperCase() + w.substr(1).toLowerCase()).join(' ') : '';
+        // 1. Sanitization & Normalization
+        const trim = (str) => (str ? str.trim() : '');
+        const toTitleCase = (str) => str ? str.split(' ').map(w => w[0].toUpperCase() + w.substr(1).toLowerCase()).join(' ') : '';
 
-    name = toTitleCase(trim(name));
-    surname = toTitleCase(trim(surname));
-    email = trim(email).toLowerCase();
-    phoneNumber = trim(phoneNumber).replace(/\s+/g, '');
-    phoneCode = trim(phoneCode) || '+254';
+        name = toTitleCase(trim(name));
+        surname = toTitleCase(trim(surname));
+        email = trim(email).toLowerCase();
+        phoneNumber = trim(phoneNumber).replace(/\s+/g, '');
+        phoneCode = trim(phoneCode) || '+254';
 
-    // 2. Strict Validation
-    if (!name || !surname || !password || !sex) {
-        return Response.json({ error: 'Required identity fields (Name, Surname, Password, Sex) are missing.' }, { status: 400 });
-    }
+        // 2. Strict Validation
+        if (!name || !surname || !password || !sex) {
+            return Response.json({ error: 'Required identity fields (Name, Surname, Password, Sex) are missing.' }, { status: 400 });
+        }
 
-    if (email && !/^\S+@\S+\.\S+$/.test(email)) {
-        return Response.json({ error: 'Invalid email format provided.' }, { status: 400 });
-    }
+        if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+            return Response.json({ error: 'Invalid email format provided.' }, { status: 400 });
+        }
 
-    // 3. Early Exit: Existence Check (Efficiency & Collision avoidance)
-    const checkQuery = `
+        // 3. Early Exit: Existence Check (Efficiency & Collision avoidance)
+        const checkQuery = `
             MATCH (p:Person) 
             WHERE (p.email = $email AND $email <> "") OR (p.id = $phone OR p.phoneNumber = $phone)
             RETURN p.id LIMIT 1
         `;
-    const fullPhone = `${phoneCode}${phoneNumber}`;
-    const existing = await executeQuery(checkQuery, { email, phone: phoneNumber });
+        const existing = await executeQuery(checkQuery, { email, phone: phoneNumber });
 
-    if (existing.length > 0) {
-        return Response.json({ error: 'Identity already exists in the vault. Try signing in.' }, { status: 409 });
-    }
+        if (existing.length > 0) {
+            return Response.json({ error: 'Identity already exists in the vault. Try signing in.' }, { status: 409 });
+        }
 
-    let id;
-    let result;
-    let attempts = 0;
-    const maxAttempts = 5;
+        let id;
+        let result;
+        let attempts = 0;
+        const maxAttempts = 5;
 
-    // 4. Persistence with Collision Retry
-    while (attempts < maxAttempts) {
-        id = generateUniqueId();
-        try {
-            const passwordHash = await bcrypt.hash(password, 10);
-            const securityAnswerHash = securityAnswer ? await bcrypt.hash(trim(securityAnswer).toLowerCase(), 10) : '';
+        // 4. Persistence with Collision Retry
+        while (attempts < maxAttempts) {
+            id = generateUniqueId();
+            try {
+                const passwordHash = await bcrypt.hash(password, 10);
+                const securityAnswerHash = securityAnswer ? await bcrypt.hash(trim(securityAnswer).toLowerCase(), 10) : '';
 
-            const query = `
+                const query = `
                     CREATE (p:Person {
                         id: $id,
                         name: $name,
@@ -86,47 +86,47 @@ export async function POST(request) {
                     RETURN p.id as id, p.name as name
                 `;
 
-            const params = {
-                id, name, surname,
-                thirdName: toTitleCase(trim(thirdName)),
-                fourthName: toTitleCase(trim(fourthName)),
-                maidenName: toTitleCase(trim(maidenName)),
-                sex, email, phoneCode, phoneNumber,
-                tribe: toTitleCase(trim(tribe)),
-                subTribe: toTitleCase(trim(subTribe)),
-                clan: toTitleCase(trim(clan)),
-                birthPlace: toTitleCase(trim(birthPlace)),
-                dob, birthOrder: trim(birthOrder),
-                securityQuestion: trim(securityQuestion),
-                securityAnswerHash, passwordHash, isDeceased: !!isDeceased,
-                deathYear: trim(deathYear), deathMonth: trim(deathMonth)
-            };
+                const params = {
+                    id, name, surname,
+                    thirdName: toTitleCase(trim(thirdName)),
+                    fourthName: toTitleCase(trim(fourthName)),
+                    maidenName: toTitleCase(trim(maidenName)),
+                    sex, email, phoneCode, phoneNumber,
+                    tribe: toTitleCase(trim(tribe)),
+                    subTribe: toTitleCase(trim(subTribe)),
+                    clan: toTitleCase(trim(clan)),
+                    birthPlace: toTitleCase(trim(birthPlace)),
+                    dob, birthOrder: trim(birthOrder),
+                    securityQuestion: trim(securityQuestion),
+                    securityAnswerHash, passwordHash, isDeceased: !!isDeceased,
+                    deathYear: trim(deathYear), deathMonth: trim(deathMonth)
+                };
 
-            result = await executeQuery(query, params);
-            if (result && result.length > 0) break;
-        } catch (err) {
-            if (err.message.includes('already exists') || err.message.includes('ConstraintValidationFailed')) {
-                console.warn(`ID collision detected for ${id}. Retrying...`);
-                attempts++;
-                continue;
+                result = await executeQuery(query, params);
+                if (result && result.length > 0) break;
+            } catch (err) {
+                if (err.message.includes('already exists') || err.message.includes('ConstraintValidationFailed')) {
+                    console.warn(`ID collision detected for ${id}. Retrying...`);
+                    attempts++;
+                    continue;
+                }
+                throw err;
             }
-            throw err;
         }
-    }
 
-    if (!result || result.length === 0) {
-        throw new Error("Failed to create user in heritage vault after multiple attempts.");
-    }
+        if (!result || result.length === 0) {
+            throw new Error("Failed to create user in heritage vault after multiple attempts.");
+        }
 
-    // Send Welcome Email
-    if (email && process.env.RESEND_API_KEY) {
-        try {
-            const resend = new Resend(process.env.RESEND_API_KEY);
-            await resend.emails.send({
-                from: 'Watu Network <onboarding@watu.network>',
-                to: email,
-                subject: 'Welcome to Watu Network - Your Identity Key',
-                html: `
+        // Send Welcome Email
+        if (email && process.env.RESEND_API_KEY) {
+            try {
+                const resend = new Resend(process.env.RESEND_API_KEY);
+                await resend.emails.send({
+                    from: 'Watu Network <onboarding@watu.network>',
+                    to: email,
+                    subject: 'Welcome to Watu Network - Your Identity Key',
+                    html: `
                         <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                             <h2 style="color: #6366f1;">Welcome to Watu Network, ${name}!</h2>
                             <p>Your ancestral profile has been successfully created in the vault.</p>
@@ -139,20 +139,20 @@ export async function POST(request) {
                             <p style="font-size: 0.8rem; color: #9ca3af;">Watu.Network - Preserving African Heritage</p>
                         </div>
                     `
-            });
-        } catch (emailErr) {
-            console.error('Email failed:', emailErr);
+                });
+            } catch (emailErr) {
+                console.error('Email failed:', emailErr);
+            }
         }
+
+        return Response.json({
+            success: true,
+            id: result[0].get('id'),
+            name: result[0].get('name')
+        });
+
+    } catch (err) {
+        console.error('Onboarding API Error:', err);
+        return Response.json({ error: err.message }, { status: 500 });
     }
-
-    return Response.json({
-        success: true,
-        id: result[0].get('id'),
-        name: result[0].get('name')
-    });
-
-} catch (err) {
-    console.error('Onboarding API Error:', err);
-    return Response.json({ error: err.message }, { status: 500 });
-}
 }

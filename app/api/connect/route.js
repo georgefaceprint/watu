@@ -1,4 +1,6 @@
 import { executeQuery } from '@/lib/neo4j';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
@@ -45,19 +47,38 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+    const session = await getServerSession(authOptions);
     const { personId, relativeId, relationship, action, details } = await request.json();
+
+    // 1. Session Authorization: Must be logged in to connect anyone
+    if (!session) {
+        return Response.json({ error: 'Authentication required to modify heritage connections.' }, { status: 401 });
+    }
+
+    // 2. Prevent Self-Connection
+    if (personId === relativeId) {
+        return Response.json({ error: 'You cannot connect a person to themselves in the heritage tree.' }, { status: 400 });
+    }
 
     // Action handling for Approvals (Delegated Administration)
     if (action === 'VERIFY') {
+        // Verification requires extra authority - e.g. checking if user is an elder or admin
+        // For now, only allowing the person themselves to verify their incoming connections
         const query = `
-            MATCH (p1:Person)-[r]->(p2:Person)
+            MATCH (p1:Person)-[r]->(p2:Person {id: $authId})
             WHERE id(r) = $relationshipId
             SET r.status = 'VERIFIED', r.verifiedAt = datetime()
             RETURN p1.name as from, type(r) as rel, p2.name as to
         `;
         try {
-            const records = await executeQuery(query, { relationshipId: parseInt(relativeId) });
-            return Response.json({ success: true, message: 'Relationship verified' });
+            const records = await executeQuery(query, {
+                relationshipId: parseInt(relativeId),
+                authId: session.user.id
+            });
+            if (records.length === 0) {
+                return Response.json({ error: 'You are not authorized to verify this connection or relationship not found.' }, { status: 403 });
+            }
+            return Response.json({ success: true, message: 'Relationship verified in the vault' });
         } catch (err) {
             return Response.json({ error: err.message }, { status: 500 });
         }
@@ -67,6 +88,10 @@ export async function POST(request) {
     if (action === 'MANUAL_ADD') {
         const { generateUniqueId } = await import('@/lib/utils');
         const newId = generateUniqueId();
+
+        // Sanitization
+        const trim = (s) => (s ? s.trim() : '');
+        const toTitle = (s) => s ? s.split(' ').map(w => w[0].toUpperCase() + w.substr(1).toLowerCase()).join(' ') : '';
 
         const query = `
             MATCH (p1:Person {id: $personId})
@@ -93,19 +118,19 @@ export async function POST(request) {
             const records = await executeQuery(query, {
                 personId,
                 newId,
-                name: details.name,
-                surname: details.surname,
-                thirdName: details.thirdName || '',
-                fourthName: details.fourthName || '',
+                name: toTitle(trim(details.name)),
+                surname: toTitle(trim(details.surname)),
+                thirdName: toTitle(trim(details.thirdName)),
+                fourthName: toTitle(trim(details.fourthName)),
                 sex: details.sex,
-                maidenName: details.maidenName || '',
+                maidenName: toTitle(trim(details.maidenName)),
                 isDeceased: !!details.isDeceased,
-                deathYear: details.deathYear || '',
-                deathMonth: details.deathMonth || ''
+                deathYear: trim(details.deathYear),
+                deathMonth: trim(details.deathMonth)
             });
 
             if (records.length === 0) {
-                return Response.json({ error: `The ID you are acting as (${personId}) was not found in our records.` }, { status: 404 });
+                return Response.json({ error: `The ID (${personId}) was not found in our records.` }, { status: 404 });
             }
 
             return Response.json({ success: true, id: newId, message: 'RELATIVE ADDED & CONNECTED' });
@@ -116,9 +141,10 @@ export async function POST(request) {
 
     const allowedRelationships = ['SIBLING_OF', 'PARENT_OF', 'SPOUSE_OF', 'CHILD_OF'];
     if (!allowedRelationships.includes(relationship)) {
-        return Response.json({ error: 'Invalid relationship type' }, { status: 400 });
+        return Response.json({ error: 'Invalid relationship type provided.' }, { status: 400 });
     }
 
+    // Dynamic connection query
     const query = `
         MATCH (p1:Person {id: $personId})
         MATCH (p2:Person {id: $relativeId})
@@ -129,7 +155,7 @@ export async function POST(request) {
 
     try {
         const records = await executeQuery(query, { personId, relativeId });
-        if (records.length === 0) throw new Error('Person or Relative not found');
+        if (records.length === 0) throw new Error('Person or Relative not found in the heritage vault.');
         return Response.json({
             success: true,
             status: records[0].get('status'),
