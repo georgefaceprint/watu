@@ -1,6 +1,7 @@
 import './globals.css';
 import PWAInstaller from '../components/PWAInstaller';
 import AuthProvider from '../components/AuthProvider';
+import SignOutButton from '../components/SignOutButton';
 
 export const viewport = {
     themeColor: '#f8fafc',
@@ -68,6 +69,7 @@ export default function RootLayout({ children }) {
                                 color: 'var(--accent)',
                                 textDecoration: 'none'
                             }}>MyHazina</a>
+                            <SignOutButton />
                         </div>
                     </header>
 
@@ -93,6 +95,7 @@ export default function RootLayout({ children }) {
                             <span style={{ fontSize: '20px' }}>👤</span>
                             <span>Profile</span>
                         </a>
+                        <SignOutButton mobile={true} />
                     </nav>
 
                     <PWAInstaller />
