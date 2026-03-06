@@ -1,5 +1,6 @@
 import './globals.css';
 import PWAInstaller from '../components/PWAInstaller';
+import AuthProvider from '../components/AuthProvider';
 
 export const viewport = {
     themeColor: '#000000',
@@ -23,78 +24,79 @@ export default function RootLayout({ children }) {
                 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
             </head>
             <body>
-                <header style={{
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 100,
-                    background: 'rgba(0,0,0,0.7)',
-                    backdropFilter: 'blur(20px)',
-                    borderBottom: '1px solid var(--border)',
-                    padding: '0.75rem 1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{
-                            width: '32px',
-                            height: '32px',
-                            background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
-                            borderRadius: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 'bold',
-                            fontSize: '18px'
-                        }}>W</div>
-                        <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#fff', letterSpacing: '-0.02em' }}>Watu<span style={{ color: 'var(--accent)' }}>.Network</span></h2>
-                    </div>
+                <AuthProvider>
+                    <header style={{
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 100,
+                        background: 'rgba(0,0,0,0.7)',
+                        backdropFilter: 'blur(20px)',
+                        borderBottom: '1px solid var(--border)',
+                        padding: '0.75rem 1.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{
+                                width: '32px',
+                                height: '32px',
+                                background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))',
+                                borderRadius: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 'bold',
+                                fontSize: '18px'
+                            }}>W</div>
+                            <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#fff', letterSpacing: '-0.02em' }}>Watu<span style={{ color: 'var(--accent)' }}>.Network</span></h2>
+                        </div>
 
-                    <div className="desktop-only" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                        <a href="/" style={{ fontSize: '0.9rem', fontWeight: '500' }}>Tree</a>
-                        <a href="/connect" style={{ fontSize: '0.9rem', fontWeight: '500' }}>Connect</a>
-                        <a href="/events" style={{ fontSize: '0.9rem', fontWeight: '500' }}>Events</a>
-                        <a href="/profile" style={{ fontSize: '0.9rem', fontWeight: '500' }}>My Profile</a>
-                        <a href="https://myhazina.org" target="_blank" style={{
-                            background: 'rgba(255,255,255,0.05)',
-                            border: '1px solid var(--border)',
-                            padding: '6px 16px',
-                            borderRadius: '999px',
-                            fontSize: '0.875rem',
-                            fontWeight: '600',
-                            color: 'var(--accent)'
-                        }}>MyHazina</a>
-                    </div>
-                </header>
+                        <div className="desktop-only" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                            <a href="/" style={{ fontSize: '0.9rem', fontWeight: '500' }}>Tree</a>
+                            <a href="/connect" style={{ fontSize: '0.9rem', fontWeight: '500' }}>Connect</a>
+                            <a href="/events" style={{ fontSize: '0.9rem', fontWeight: '500' }}>Events</a>
+                            <a href="/profile" style={{ fontSize: '0.9rem', fontWeight: '500' }}>My Profile</a>
+                            <a href="https://myhazina.org" target="_blank" style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid var(--border)',
+                                padding: '6px 16px',
+                                borderRadius: '999px',
+                                fontSize: '0.875rem',
+                                fontWeight: '600',
+                                color: 'var(--accent)'
+                            }}>MyHazina</a>
+                        </div>
+                    </header>
 
-                <main style={{ paddingBottom: '80px' }}>
-                    {children}
-                </main>
+                    <main style={{ paddingBottom: '80px' }}>
+                        {children}
+                    </main>
 
-                {/* Mobile Bottom Navigation */}
-                <nav className="bottom-nav mobile-only">
-                    <a href="/" style={{ textAlign: 'center', flex: 1, fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px', opacity: 0.6 }}>
-                        <span style={{ fontSize: '20px' }}>🌳</span>
-                        <span>Tree</span>
-                    </a>
-                    <a href="/connect" style={{ textAlign: 'center', flex: 1, fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px', opacity: 0.6 }}>
-                        <span style={{ fontSize: '20px' }}>🔍</span>
-                        <span>Connect</span>
-                    </a>
-                    <a href="/events" style={{ textAlign: 'center', flex: 1, fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px', opacity: 0.6 }}>
-                        <span style={{ fontSize: '20px' }}>📅</span>
-                        <span>Events</span>
-                    </a>
-                    <a href="/profile" style={{ textAlign: 'center', flex: 1, fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px', opacity: 0.6 }}>
-                        <span style={{ fontSize: '20px' }}>👤</span>
-                        <span>Profile</span>
-                    </a>
-                </nav>
+                    {/* Mobile Bottom Navigation */}
+                    <nav className="bottom-nav mobile-only">
+                        <a href="/" style={{ textAlign: 'center', flex: 1, fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px', opacity: 0.6 }}>
+                            <span style={{ fontSize: '20px' }}>🌳</span>
+                            <span>Tree</span>
+                        </a>
+                        <a href="/connect" style={{ textAlign: 'center', flex: 1, fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px', opacity: 0.6 }}>
+                            <span style={{ fontSize: '20px' }}>🔍</span>
+                            <span>Connect</span>
+                        </a>
+                        <a href="/events" style={{ textAlign: 'center', flex: 1, fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px', opacity: 0.6 }}>
+                            <span style={{ fontSize: '20px' }}>📅</span>
+                            <span>Events</span>
+                        </a>
+                        <a href="/profile" style={{ textAlign: 'center', flex: 1, fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px', opacity: 0.6 }}>
+                            <span style={{ fontSize: '20px' }}>👤</span>
+                            <span>Profile</span>
+                        </a>
+                    </nav>
 
-                <PWAInstaller />
+                    <PWAInstaller />
 
-                <style dangerouslySetInnerHTML={{
-                    __html: `
+                    <style dangerouslySetInnerHTML={{
+                        __html: `
                     @media (min-width: 768px) {
                         .mobile-only { display: none !important; }
                     }
@@ -102,6 +104,8 @@ export default function RootLayout({ children }) {
                         .desktop-only { display: none !important; }
                     }
                 `}} />
+
+                </AuthProvider>
             </body>
         </html>
     );
