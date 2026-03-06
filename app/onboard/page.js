@@ -27,14 +27,38 @@ export default function OnboardPage() {
         deathMonth: '',
     });
 
-    const tribes = [
-        "Kikuyu", "Luhya", "Luo", "Kalenjin", "Kamba", "Kisii", "Meru", "Mijikenda",
-        "Maasai", "Turkana", "Samburu", "Taita", "Pokot", "Basuba", "Teso", "Kuria"
-    ];
+    const [registry, setRegistry] = useState([]);
+    const [selectedTribeData, setSelectedTribeData] = useState(null);
+
+    useEffect(() => {
+        const fetchRegistry = async () => {
+            try {
+                const res = await fetch('/api/clans/registry');
+                const data = await res.json();
+                setRegistry(data);
+            } catch (err) {
+                console.error("Failed to fetch clan registry", err);
+            }
+        };
+        fetchRegistry();
+    }, []);
+
+    useEffect(() => {
+        if (formData.tribe) {
+            const tribe = registry.find(t => t.name === formData.tribe);
+            setSelectedTribeData(tribe || null);
+        } else {
+            setSelectedTribeData(null);
+        }
+    }, [formData.tribe, registry]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
+        if (name === 'tribe') {
+            setFormData(prev => ({ ...prev, tribe: value, subTribe: '' }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+        }
     };
 
     const [loading, setLoading] = useState(false);
@@ -280,13 +304,22 @@ export default function OnboardPage() {
                                 <label style={labelStyle}>Tribe / Ethnic Group</label>
                                 <select name="tribe" value={formData.tribe} onChange={handleChange} className="input-field" style={{ appearance: 'none' }}>
                                     <option value="">Select Option</option>
-                                    {tribes.map(t => <option key={t} value={t}>{t}</option>)}
+                                    {registry.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
                                 </select>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div style={inputGroup}>
-                                    <label style={labelStyle}>Sub-tribe</label>
-                                    <input name="subTribe" value={formData.subTribe} placeholder="e.g. Bukusu" onChange={handleChange} className="input-field" />
+                                    <label style={labelStyle}>Sub-tribe / Group</label>
+                                    {selectedTribeData && selectedTribeData.subGroups.length > 0 ? (
+                                        <select name="subTribe" value={formData.subTribe} onChange={handleChange} className="input-field">
+                                            <option value="">Select Option</option>
+                                            {selectedTribeData.subGroups.map(sg => (
+                                                <option key={sg} value={sg}>{sg}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input name="subTribe" value={formData.subTribe} placeholder="e.g. Bukusu" onChange={handleChange} className="input-field" />
+                                    )}
                                 </div>
                                 <div style={inputGroup}>
                                     <label style={labelStyle}>Clan</label>
