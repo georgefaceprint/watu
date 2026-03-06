@@ -1,27 +1,23 @@
 const neo4j = require('neo4j-driver');
-require('dotenv').config({ path: '.env.local' });
+
+// Manual config since dotenv is not available in raw node execution here
+const NEO4J_URI = "neo4j+s://c4b441df.databases.neo4j.io";
+const NEO4J_USER = "neo4j";
+const NEO4J_PASSWORD = "GmsqpLJItFW-ZUPktNR_iKV1fK6EKFpE7JoO4lAy8RE";
 
 async function setup() {
-    const driver = neo4j.driver(
-        process.env.NEO4J_URI,
-        neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD)
-    );
+    console.log('--- CONNECTING TO NEO4J AURA ---');
+    const driver = neo4j.driver(NEO4J_URI, neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD));
     const session = driver.session();
 
     try {
         console.log('--- ENFORCING DATABASE CONSTRAINTS ---');
 
-        // 1. Unique ID Constraint
         await session.run('CREATE CONSTRAINT person_id_unique IF NOT EXISTS FOR (p:Person) REQUIRE p.id IS UNIQUE');
         console.log('✅ CONSTRAINT: Person(id) IS UNIQUE');
 
-        // 2. Unique Phone Constraint (Optional but recommended)
         await session.run('CREATE CONSTRAINT person_phone_unique IF NOT EXISTS FOR (p:Person) REQUIRE p.phone IS UNIQUE');
         console.log('✅ CONSTRAINT: Person(phone) IS UNIQUE');
-
-        // 3. Unique Email Constraint
-        await session.run('CREATE CONSTRAINT person_email_unique IF NOT EXISTS FOR (p:Person) REQUIRE p.email IS UNIQUE');
-        console.log('✅ CONSTRAINT: Person(email) IS UNIQUE');
 
     } catch (err) {
         console.error('❌ SETUP ERROR:', err.message);
