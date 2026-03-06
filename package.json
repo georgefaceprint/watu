@@ -15,6 +15,7 @@
     "cookie": "^1.1.1",
     "d3": "latest",
     "jose": "^6.2.0",
+    "jsonwebtoken": "^9.0.3",
     "neo4j-driver": "latest",
     "next": "latest",
     "next-auth": "^4.24.13",
