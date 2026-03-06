@@ -101,7 +101,32 @@ export default function WatuIDCard({ person }) {
                     border: 1px solid rgba(255, 255, 255, 0.1);
                     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
                     background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(244, 114, 182, 0.15) 100%);
+                    overflow: hidden;
                 }
+                .card-face::after {
+                    content: "";
+                    position: absolute;
+                    top: -50%;
+                    left: -50%;
+                    width: 200%;
+                    height: 200%;
+                    background: linear-gradient(
+                        45deg,
+                        transparent 45%,
+                        rgba(255, 255, 255, 0.1) 48%,
+                        rgba(255, 255, 255, 0.2) 50%,
+                        rgba(255, 255, 255, 0.1) 52%,
+                        transparent 55%
+                    );
+                    transform: rotate(45deg);
+                    animation: shimmer 6s infinite;
+                    pointer-events: none;
+                }
+                @keyframes shimmer {
+                    0% { transform: translate(-30%, -30%) rotate(45deg); }
+                    20%, 100% { transform: translate(30%, 30%) rotate(45deg); }
+                }
+
                 .card-back {
                     transform: rotateY(180deg);
                     background: linear-gradient(225deg, #1e1b4b 0%, #0c0a09 100%);
@@ -130,6 +155,24 @@ export default function WatuIDCard({ person }) {
                     background: rgba(255,255,255,0.05);
                     border: 1px solid var(--border);
                 }
+                .portrait-container::before {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 2px;
+                    background: var(--accent);
+                    box-shadow: 0 0 15px var(--accent);
+                    z-index: 10;
+                    animation: scan 3s ease-in-out infinite;
+                    opacity: 0.5;
+                }
+                @keyframes scan {
+                    0%, 100% { top: 0%; }
+                    50% { top: 100%; }
+                }
+
                 .portrait-glow {
                     position: absolute;
                     inset: -5px;

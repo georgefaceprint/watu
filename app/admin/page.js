@@ -7,16 +7,21 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Mock data fetching
-        setTimeout(() => {
-            setStats({ users: 1240, connections: 850, tribes: 11 });
-            setRecentUsers([
-                { id: 'W-XJ92-K5P1', name: 'James', surname: 'Sifuna', tribe: 'Luhya', status: 'VERIFIED', joined: '2 mins ago' },
-                { id: 'W-KM88-L0Q2', name: 'Mary', surname: 'Wambui', tribe: 'Kikuyu', status: 'VERIFIED', joined: '15 mins ago' },
-                { id: 'W-TR44-P9I1', name: 'David', surname: 'Ochieng', tribe: 'Luo', status: 'PENDING', joined: '1 hour ago' },
-            ]);
-            setLoading(false);
-        }, 1000);
+        const fetchStats = async () => {
+            try {
+                const res = await fetch('/api/admin/stats');
+                const data = await res.json();
+                if (data.stats) {
+                    setStats(data.stats);
+                    setRecentUsers(data.recentUsers);
+                }
+            } catch (err) {
+                console.error("Failed to load admin stats:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
     }, []);
 
     const userGoal = 10000;
