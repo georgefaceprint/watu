@@ -1,19 +1,22 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function SignOutButton({ mobile = false }) {
     const router = useRouter();
+    const { data: session, status } = useSession();
 
-    const handleSignOut = () => {
+    const handleSignOut = async () => {
         // Clear all local session data
         localStorage.removeItem('watu_id');
         localStorage.removeItem('watu_session');
         sessionStorage.clear();
 
-        // Redirect to login
-        router.push('/login');
-        router.refresh();
+        // Redirect to login via next-auth
+        await signOut({ callbackUrl: '/login' });
     };
+
+    if (status !== 'authenticated') return null;
 
     if (mobile) {
         return (
