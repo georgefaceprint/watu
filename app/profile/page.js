@@ -362,7 +362,7 @@ export default function ProfilePage() {
                 }
                 .form-grid {
                     display: grid;
-                    grid-template-columns: 1fr 1fr;
+                    grid-template-columns: 1fr 1.5fr;
                     gap: 1.5rem;
                 }
                 .input-group label {
@@ -377,15 +377,24 @@ export default function ProfilePage() {
                 }
                 .bold-input {
                     width: 100%;
-                    padding: 1.1rem 1.5rem;
+                    padding: 1.1rem 1.25rem;
                     background: #ffffff;
                     border: 1px solid #e2e8f0;
                     border-radius: 18px;
                     color: #0f172a;
                     font-weight: 600;
-                    font-size: 1rem;
+                    font-size: 0.95rem;
                     outline: none;
                     transition: all 0.3s ease;
+                    text-overflow: ellipsis;
+                }
+                select.bold-input {
+                    padding-right: 2.5rem;
+                    appearance: none;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: right 1rem center;
+                    background-size: 1.25rem;
                 }
                 .bold-input:focus {
                     background: #ffffff;
