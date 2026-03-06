@@ -2,6 +2,7 @@ import './globals.css';
 import PWAInstaller from '../components/PWAInstaller';
 import AuthProvider from '../components/AuthProvider';
 import SignOutButton from '../components/SignOutButton';
+import ProfileCompletion from './components/ProfileCompletion';
 
 export const viewport = {
     themeColor: '#f8fafc',
@@ -99,6 +100,7 @@ export default function RootLayout({ children }) {
                     </nav>
 
                     <PWAInstaller />
+                    <ProfileCompletion />
 
                     <style dangerouslySetInnerHTML={{
                         __html: `

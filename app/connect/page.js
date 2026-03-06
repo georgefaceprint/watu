@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { calculateCompleteness } from '@/lib/utils';
 
 export default function ConnectPage() {
     const [search, setSearch] = useState({ name: '', surname: '', tribe: '', uniqueId: '', clan: '' });
@@ -19,6 +20,8 @@ export default function ConnectPage() {
         deathMonth: ''
     });
 
+    const [completeness, setCompleteness] = useState({ percent: 0, missing: [], isComplete: true });
+
     const handleManualChange = (e) => {
         const { name, value, type, checked } = e.target;
         setManualForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
@@ -28,6 +31,10 @@ export default function ConnectPage() {
         e.preventDefault();
         if (!myId) {
             alert("Please enter your Watu.Network ID first (top right)");
+            return;
+        }
+        if (!completeness.isComplete) {
+            alert(`VAULT LOCK: YOUR PROFILE IS ONLY ${completeness.percent}% COMPLETE. PLEASE FINISH YOUR PROFILE FIRST.`);
             return;
         }
         if (!manualForm.name || !manualForm.surname || !manualForm.sex) {
@@ -70,6 +77,20 @@ export default function ConnectPage() {
         if (storedId) setMyId(storedId);
     }, []);
 
+    useEffect(() => {
+        if (myId) {
+            fetch(`/api/tree?personId=${myId.toUpperCase()}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.nodes && data.nodes.length > 0) {
+                        const user = data.nodes.find(n => n.id === myId.toUpperCase());
+                        if (user) setCompleteness(calculateCompleteness(user));
+                    }
+                })
+                .catch(err => console.error("Completeness check failed", err));
+        }
+    }, [myId]);
+
     const handleSearch = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -88,6 +109,10 @@ export default function ConnectPage() {
     const handleConnect = async (relativeId, relationship) => {
         if (!myId) {
             alert("Please enter your Watu.Network ID first (top right)");
+            return;
+        }
+        if (!completeness.isComplete) {
+            alert(`VAULT LOCK: YOUR PROFILE IS ONLY ${completeness.percent}% COMPLETE. PLEASE FINISH YOUR PROFILE FIRST.`);
             return;
         }
         try {
@@ -124,6 +149,33 @@ export default function ConnectPage() {
                     />
                 </div>
             </div>
+
+            {!completeness.isComplete && myId && (
+                <div className="glass animate-fade-in" style={{
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    background: 'rgba(239, 68, 68, 0.05)',
+                    marginBottom: '2rem',
+                    padding: '2rem',
+                    textAlign: 'center'
+                }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔒</div>
+                    <h2 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '0.5rem' }}>VAULT LOCK ACTIVE</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '500px', margin: '0 auto 1.5rem auto' }}>
+                        YOUR HERITAGE PROFILE IS ONLY <strong>{completeness.percent}%</strong> COMPLETE.
+                        TO ENSURE DATA INTEGRITY, YOU MUST REACH 100% BEFORE CONNECTING WITH KIN.
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                        {completeness.missing.map(item => (
+                            <span key={item} style={{ fontSize: '0.65rem', padding: '4px 10px', background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', borderRadius: '4px', fontWeight: 'bold' }}>
+                                MISSING: {item.toUpperCase()}
+                            </span>
+                        ))}
+                    </div>
+                    <button onClick={() => window.location.href = '/profile'} className="btn-primary" style={{ padding: '0.75rem 2rem' }}>
+                        COMPLETE MY PROFILE NOW
+                    </button>
+                </div>
+            )}
 
             <form onSubmit={handleSearch} className="glass" style={{
                 marginBottom: '3rem',

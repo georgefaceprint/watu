@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { calculateCompleteness } from '@/lib/utils';
 import WatuIDCard from '../components/WatuIDCard';
 
 export default function ProfilePage() {
@@ -19,6 +20,7 @@ export default function ProfilePage() {
         profession: '',
         clan: '',
         tribe: '',
+        subTribe: '',
         dob: '',
         birthOrder: '',
         phoneCode: '',
@@ -26,6 +28,7 @@ export default function ProfilePage() {
         isDeceased: false,
         deathYear: '',
         deathMonth: '',
+        securityQuestion: '',
         photo: null
     });
 
@@ -111,6 +114,29 @@ export default function ProfilePage() {
             {/* DIGITAL WATU ID CARD - THE WOW COMPONENT */}
             <div className="animate-fade-in" style={{ marginBottom: '4rem' }}>
                 <WatuIDCard person={profile} />
+
+                {/* COMPLETENESS PROGRESS */}
+                <div style={{ maxWidth: '380px', margin: '-1rem auto 2rem auto', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--accent)', letterSpacing: '0.1em' }}>VAULT COMPLETION SCORE</span>
+                        <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#fff' }}>{calculateCompleteness(profile).percent}%</span>
+                    </div>
+                    <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{
+                            width: `${calculateCompleteness(profile).percent}%`,
+                            height: '100%',
+                            background: 'linear-gradient(90deg, var(--accent), var(--accent-secondary))',
+                            boxShadow: '0 0 10px var(--accent)',
+                            transition: 'width 0.8s ease'
+                        }}></div>
+                    </div>
+                    {!calculateCompleteness(profile).isComplete && (
+                        <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '8px', textAlign: 'center' }}>
+                            REQUIRED FOR CONNECTIONS: <span style={{ color: '#f87171' }}>{calculateCompleteness(profile).missing[0]?.toUpperCase()}</span> {calculateCompleteness(profile).missing.length > 1 && `& ${calculateCompleteness(profile).missing.length - 1} MORE`}
+                        </p>
+                    )}
+                </div>
+
                 <p style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 'bold', marginTop: '-1rem', opacity: 0.7 }}>
                     TIP: CLICK CARD TO FLIP FOR QR VAULT
                 </p>
@@ -310,9 +336,20 @@ export default function ProfilePage() {
                         <input name="residency" value={profile.residency} onChange={handleChange} className="profile-input" />
                     </div>
 
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={inputGroup}>
+                            <label style={labelStyle}>Ancestral Clan</label>
+                            <input name="clan" value={profile.clan} onChange={handleChange} className="profile-input" />
+                        </div>
+                        <div style={inputGroup}>
+                            <label style={labelStyle}>Sub-Tribe / Group</label>
+                            <input name="subTribe" value={profile.subTribe} placeholder="e.g. Nandi" onChange={handleChange} className="profile-input" />
+                        </div>
+                    </div>
+
                     <div style={inputGroup}>
-                        <label style={labelStyle}>Ancestral Clan</label>
-                        <input name="clan" value={profile.clan} onChange={handleChange} className="profile-input" />
+                        <label style={labelStyle}>Security Recovery Question</label>
+                        <input name="securityQuestion" value={profile.securityQuestion} placeholder="e.g. Your first pet's name?" onChange={handleChange} className="profile-input" />
                     </div>
 
                     <div style={inputGroup}>
