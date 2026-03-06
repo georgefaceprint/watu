@@ -291,9 +291,9 @@ export default function ProfilePage() {
                 __html: `
                 .profile-wrapper {
                     min-height: 100vh;
-                    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent),
-                                radial-gradient(circle at bottom left, rgba(79, 70, 229, 0.1), transparent),
-                                #0f172a;
+                    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent),
+                                radial-gradient(circle at bottom left, rgba(79, 70, 229, 0.03), transparent),
+                                #f8fafc;
                     padding: 4rem 1rem 8rem 1rem;
                 }
                 .profile-header {
@@ -307,7 +307,7 @@ export default function ProfilePage() {
                     margin-bottom: 0.5rem;
                 }
                 .text-gradient {
-                    background: linear-gradient(to right, #fff, #94a3b8);
+                    background: linear-gradient(to right, #1e293b, #475569);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
                 }
@@ -325,12 +325,16 @@ export default function ProfilePage() {
                     margin: 0 auto;
                 }
                 .glass-card {
-                    background: rgba(255, 255, 255, 0.03);
+                    background: rgba(255, 255, 255, 0.8);
                     backdrop-filter: blur(20px);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border: 1px solid rgba(0, 0, 0, 0.05);
                     border-radius: 32px;
                     padding: 2.5rem;
+                    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
                     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                .completeness-dashboard span {
+                    color: #1e293b !important;
                 }
                 .sticky-top {
                     position: sticky;
@@ -339,7 +343,7 @@ export default function ProfilePage() {
                 .section-title {
                     font-size: 1.1rem;
                     font-weight: 900;
-                    color: #fff;
+                    color: #1e293b;
                     margin-bottom: 2rem;
                     display: flex;
                     align-items: center;
@@ -347,7 +351,7 @@ export default function ProfilePage() {
                     letter-spacing: 0.05em;
                 }
                 .section-title .icon {
-                    background: rgba(99, 102, 241, 0.1);
+                    background: rgba(99, 102, 241, 0.08);
                     width: 36px;
                     height: 36px;
                     display: flex;
@@ -374,19 +378,19 @@ export default function ProfilePage() {
                 .bold-input {
                     width: 100%;
                     padding: 1.1rem 1.5rem;
-                    background: rgba(0,0,0,0.2);
-                    border: 1px solid rgba(255,255,255,0.05);
+                    background: #ffffff;
+                    border: 1px solid #e2e8f0;
                     border-radius: 18px;
-                    color: #fff;
+                    color: #0f172a;
                     font-weight: 600;
                     font-size: 1rem;
                     outline: none;
                     transition: all 0.3s ease;
                 }
                 .bold-input:focus {
-                    background: rgba(255,255,255,0.05);
+                    background: #ffffff;
                     border-color: var(--accent);
-                    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+                    box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
                     transform: translateY(-2px);
                 }
                 .age-pill {
@@ -399,7 +403,7 @@ export default function ProfilePage() {
                 }
                 .progress-track {
                     height: 10px;
-                    background: rgba(0,0,0,0.3);
+                    background: #e2e8f0;
                     border-radius: 20px;
                     overflow: hidden;
                     margin-bottom: 1.5rem;
@@ -407,15 +411,14 @@ export default function ProfilePage() {
                 .progress-bar {
                     height: 100%;
                     background: linear-gradient(to right, var(--accent), var(--accent-secondary));
-                    box-shadow: 0 0 15px var(--accent);
                     transition: width 1s ease;
                 }
                 .missing-tag {
                     display: inline-block;
                     font-size: 0.55rem;
                     padding: 4px 10px;
-                    background: rgba(239, 68, 68, 0.1);
-                    color: #f87171;
+                    background: rgba(239, 68, 68, 0.08);
+                    color: #ef4444;
                     border-radius: 6px;
                     font-weight: 900;
                     margin-right: 6px;
@@ -424,7 +427,7 @@ export default function ProfilePage() {
                 .push-btn {
                     transform: scale(1);
                     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                    box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3);
+                    box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
                     border: none;
                     background: var(--accent);
                     color: #fff;
@@ -433,10 +436,25 @@ export default function ProfilePage() {
                 }
                 .push-btn:hover:not(:disabled) {
                     transform: scale(1.02) translateY(-2px);
-                    box-shadow: 0 25px 50px rgba(99, 102, 241, 0.4);
+                    box-shadow: 0 25px 50px rgba(99, 102, 241, 0.3);
                 }
                 .push-btn:active {
                     transform: scale(0.98);
+                }
+                .flip-btn {
+                    background: #f1f5f9;
+                    color: #475569;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 14px;
+                    padding: 0.75rem;
+                    font-weight: 700;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .flip-btn:hover {
+                    background: #e2e8f0;
+                    color: #1e293b;
                 }
                 .mt-4 { margin-top: 1rem; }
                 .mt-6 { margin-top: 1.5rem; }

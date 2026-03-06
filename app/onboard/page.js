@@ -144,7 +144,7 @@ export default function OnboardPage() {
                                 width: '32px',
                                 height: '32px',
                                 borderRadius: '10px',
-                                background: step >= s ? 'linear-gradient(135deg, var(--accent), var(--accent-secondary))' : 'rgba(0,0,0,0.05)',
+                                background: step >= s ? 'linear-gradient(135deg, var(--accent), var(--accent-secondary))' : 'rgba(0,0,0,0.08)',
                                 color: step >= s ? 'white' : 'var(--text-secondary)',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -365,7 +365,7 @@ export default function OnboardPage() {
                                         onChange={handleChange}
                                         style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                                     />
-                                    <label htmlFor="isDeceased" style={{ fontSize: '0.9rem', color: '#fff', cursor: 'pointer', fontWeight: 'bold' }}>RECORD IS FOR A DECEASED ANCESTOR</label>
+                                    <label htmlFor="isDeceased" style={{ fontSize: '0.9rem', color: 'var(--foreground)', cursor: 'pointer', fontWeight: 'bold' }}>RECORD IS FOR A DECEASED ANCESTOR</label>
                                 </div>
 
                                 {formData.isDeceased && (
@@ -453,12 +453,12 @@ export default function OnboardPage() {
                 {step === 4 && result && (
                     <div className="animate-fade-in" style={{ textAlign: 'center' }}>
                         <div style={{ width: '80px', height: '80px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', margin: '0 auto 1.5rem auto' }}>✓</div>
-                        <h3 style={{ fontSize: '1.5rem', color: '#fff' }}>Identity Confirmed!</h3>
+                        <h3 style={{ fontSize: '1.5rem', color: 'var(--foreground)' }}>Identity Confirmed!</h3>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>You can now use your unique ID to sign in.</p>
 
                         <div style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px dashed rgba(99, 102, 241, 0.4)', padding: '1.5rem', borderRadius: 'var(--radius-md)', marginBottom: '2rem' }}>
-                            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#818cf8', fontWeight: '700', marginBottom: '0.5rem' }}>Alpha-Numeric Identity Key</p>
-                            <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#fff', letterSpacing: '2px' }}>{result.id}</div>
+                            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--accent)', fontWeight: '700', marginBottom: '0.5rem' }}>Alpha-Numeric Identity Key</p>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--foreground)', letterSpacing: '2px' }}>{result.id}</div>
                         </div>
 
                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -512,7 +512,7 @@ export default function OnboardPage() {
     );
 }
 
-const stepTitle = { fontSize: '1.25rem', color: '#fff', marginBottom: '1.5rem' };
+const stepTitle = { fontSize: '1.25rem', color: 'var(--foreground)', marginBottom: '1.5rem' };
 const inputGroup = {
     display: 'flex',
     flexDirection: 'column',
@@ -531,5 +531,5 @@ const reviewRow = {
     justifyContent: 'space-between',
     fontSize: '0.95rem',
     margin: '0.75rem 0',
-    color: '#cbd5e1'
+    color: 'var(--text-secondary)'
 };
