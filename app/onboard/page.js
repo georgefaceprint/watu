@@ -27,6 +27,18 @@ export default function OnboardPage() {
         deathMonth: '',
     });
 
+    const countryCodes = [
+        { code: '+254', flag: '🇰🇪', name: 'Kenya' },
+        { code: '+27', flag: '🇿🇦', name: 'South Africa' },
+        { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
+        { code: '+255', flag: '🇹🇿', name: 'Tanzania' },
+        { code: '+256', flag: '🇺🇬', name: 'Uganda' },
+        { code: '+250', flag: '🇷🇼', name: 'Rwanda' },
+        { code: '+251', flag: '🇪🇹', name: 'Ethiopia' },
+        { code: '+44', flag: '🇬🇧', name: 'UK' },
+        { code: '+1', flag: '🇺🇸', name: 'USA' },
+    ];
+
     const [registry, setRegistry] = useState([]);
     const [selectedTribeData, setSelectedTribeData] = useState(null);
 
@@ -243,8 +255,33 @@ export default function OnboardPage() {
                             <div style={inputGroup}>
                                 <label style={labelStyle}>PHONE NUMBER <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input placeholder="+254" name="phoneCode" value={formData.phoneCode} onChange={handleChange} className="input-field" style={{ width: '100px' }} />
-                                    <input type="tel" placeholder="7XX XXX XXX" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} className="input-field" style={{ flex: 1 }} />
+                                    <div style={{ position: 'relative', width: '120px' }}>
+                                        <select
+                                            name="phoneCode"
+                                            value={formData.phoneCode}
+                                            onChange={handleChange}
+                                            className="input-field"
+                                            style={{ appearance: 'none', paddingLeft: '35px' }}
+                                        >
+                                            {countryCodes.map(c => (
+                                                <option key={c.code} value={c.code}>
+                                                    {c.code}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', pointerEvents: 'none' }}>
+                                            {countryCodes.find(c => c.code === formData.phoneCode)?.flag || '🌍'}
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="tel"
+                                        placeholder="7XX XXX XXX"
+                                        name="phoneNumber"
+                                        value={formData.phoneNumber}
+                                        onChange={handleChange}
+                                        className="input-field"
+                                        style={{ flex: 1 }}
+                                    />
                                 </div>
                             </div>
 

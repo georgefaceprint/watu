@@ -31,6 +31,18 @@ export default function ProfilePage() {
 
     const [updating, setUpdating] = useState(false);
 
+    const countryCodes = [
+        { code: '+254', flag: '🇰🇪', name: 'Kenya' },
+        { code: '+27', flag: '🇿🇦', name: 'South Africa' },
+        { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
+        { code: '+255', flag: '🇹🇿', name: 'Tanzania' },
+        { code: '+256', flag: '🇺🇬', name: 'Uganda' },
+        { code: '+250', flag: '🇷🇼', name: 'Rwanda' },
+        { code: '+251', flag: '🇪🇹', name: 'Ethiopia' },
+        { code: '+44', flag: '🇬🇧', name: 'UK' },
+        { code: '+1', flag: '🇺🇸', name: 'USA' },
+    ];
+
     useEffect(() => {
         if (status === 'unauthenticated') {
             router.push('/login');
@@ -271,7 +283,24 @@ export default function ProfilePage() {
                     <div style={inputGroup}>
                         <label style={labelStyle}>Contact Number</label>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                            <input name="phoneCode" value={profile.phoneCode} onChange={handleChange} className="profile-input" style={{ width: '100px' }} placeholder="+254" />
+                            <div style={{ position: 'relative', width: '120px' }}>
+                                <select
+                                    name="phoneCode"
+                                    value={profile.phoneCode || '+254'}
+                                    onChange={handleChange}
+                                    className="profile-input"
+                                    style={{ appearance: 'none', paddingLeft: '35px' }}
+                                >
+                                    {countryCodes.map(c => (
+                                        <option key={c.code} value={c.code}>
+                                            {c.code}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', pointerEvents: 'none' }}>
+                                    {countryCodes.find(c => c.code === (profile.phoneCode || '+254'))?.flag || '🌍'}
+                                </div>
+                            </div>
                             <input name="phoneNumber" value={profile.phoneNumber} onChange={handleChange} className="profile-input" style={{ flex: 1 }} placeholder="7XX XXX XXX" />
                         </div>
                     </div>
