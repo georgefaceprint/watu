@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function ConnectPage() {
     const [search, setSearch] = useState({ name: '', surname: '', tribe: '', uniqueId: '', clan: '' });
