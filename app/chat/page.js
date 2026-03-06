@@ -1,10 +1,13 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
 
 export default function ChatPage() {
-    const [activeTab, setActiveTab] = useState('chats'); // 'chats' or 'groups'
+    const [activeTab, setActiveTab] = useState('chats');
     const [selectedId, setSelectedId] = useState(null);
+    const [input, setInput] = useState('');
     const scrollRef = useRef(null);
+    const socketRef = useRef(null);
 
     const [groups, setGroups] = useState([
         { id: 1, name: 'Sifuna Clan Global', type: 'CLAN', members: 45, lastMessage: 'Nelson: We need to update the heritage records for March.', time: '10:24 AM', unread: 3 },
@@ -13,13 +16,36 @@ export default function ChatPage() {
     ]);
 
     const [messages, setMessages] = useState([
-        { id: 1, sender: 'Nelson Ndlela', text: 'Peace be upon you all. I have updated our patriarch lineage.', time: '10:00 AM', isMe: false },
-        { id: 2, sender: 'Me', text: 'Thank you Nelson. I can see the new connections on the tree.', time: '10:15 AM', isMe: true },
-        { id: 3, sender: 'Thabo', text: 'This system is much faster than the old manual records.', time: '10:20 AM', isMe: false },
-        { id: 4, sender: 'Nelson', text: 'We need to update the heritage records for March.', time: '10:24 AM', isMe: false },
+        { id: 'initial-1', sender: 'Nelson Ndlela', text: 'Peace be upon you all. I have updated our patriarch lineage.', time: '10:00 AM', isMe: false },
+        { id: 'initial-2', sender: 'Me', text: 'Thank you Nelson. I can see the new connections on the tree.', time: '10:15 AM', isMe: true },
+        { id: 'initial-3', sender: 'Thabo', text: 'This system is much faster than the old manual records.', time: '10:20 AM', isMe: false },
     ]);
 
-    const [input, setInput] = useState('');
+    useEffect(() => {
+        // Initialize socket connection
+        fetch('/api/chat/socket').finally(() => {
+            const socket = io({
+                path: '/api/chat/socket',
+            });
+            socketRef.current = socket;
+
+            socket.on('receive-message', (msg) => {
+                setMessages(prev => {
+                    // Avoid duplicate messages for sender (already added locally)
+                    if (msg.senderId === socket.id) return prev;
+                    return [...prev, { ...msg, isMe: false }];
+                });
+            });
+
+            return () => socket.disconnect();
+        });
+    }, []);
+
+    useEffect(() => {
+        if (selectedId && socketRef.current) {
+            socketRef.current.emit('join-room', `group-${selectedId}`);
+        }
+    }, [selectedId]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -29,15 +55,24 @@ export default function ChatPage() {
 
     const handleSend = (e) => {
         e.preventDefault();
-        if (!input.trim()) return;
+        if (!input.trim() || !socketRef.current) return;
+
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const newMessage = {
-            id: messages.length + 1,
+            id: Date.now(),
+            roomId: `group-${selectedId}`,
             sender: 'Me',
+            senderId: socketRef.current.id,
             text: input,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            time: timestamp,
             isMe: true
         };
-        setMessages([...messages, newMessage]);
+
+        // Emit to server
+        socketRef.current.emit('send-message', newMessage);
+
+        // Update locally for instant feedback
+        setMessages(prev => [...prev, newMessage]);
         setInput('');
     };
 
@@ -59,7 +94,7 @@ export default function ChatPage() {
                     transition: 'all 0.3s ease',
                     flex: '1 1 auto',
                     overflow: 'hidden'
-                } as any}>
+                }}>
                     {/* Desktop Sidebar always shows */}
                     <div className="sidebar-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
                         <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', display: 'flex', gap: '0.5rem' }}>
@@ -147,7 +182,7 @@ export default function ChatPage() {
                     display: selectedId ? 'flex' : 'none',
                     flexDirection: 'column',
                     background: 'rgba(0,0,0,0.2)'
-                } as any}>
+                }}>
                     {selectedId ? (
                         <>
                             {/* Chat Header */}
@@ -244,6 +279,6 @@ export default function ChatPage() {
                     background: rgba(255,255,255,0.08) !important;
                 }
             `}} />
-        </div>
+        </div >
     );
 }

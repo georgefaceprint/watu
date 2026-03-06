@@ -18,7 +18,9 @@
     "next": "latest",
     "next-auth": "^4.24.13",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "eslint": "latest",
