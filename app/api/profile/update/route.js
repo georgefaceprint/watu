@@ -1,4 +1,5 @@
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { executeQuery } from '@/lib/neo4j';
 const cloudinary = require('@/lib/cloudinary');
 
