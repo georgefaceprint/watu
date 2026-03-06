@@ -17,6 +17,8 @@ export default function ProfilePage() {
         tribe: '',
         dob: '',
         birthOrder: '',
+        phoneCode: '',
+        phoneNumber: '',
         isDeceased: false,
         deathYear: '',
         deathMonth: '',
@@ -130,7 +132,18 @@ export default function ProfilePage() {
 
                     <div style={{ textAlign: 'center' }}>
                         <h2 style={{ fontSize: '1.5rem', color: 'var(--foreground)', marginBottom: '0.25rem' }}>{profile.name}</h2>
-                        <code style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent)', padding: '4px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>W-XJ92-K5P1</code>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <code style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent)', padding: '4px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>{profile.id || 'W-XJ92-K5P1'}</code>
+                            <button
+                                onClick={() => {
+                                    const text = `Connect with my Ancestral Identity on Watu.Network! My ID: *${profile.id}*. Join path: https://watu.network/connect?id=${profile.id}`;
+                                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                                }}
+                                style={{ background: '#25D366', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}
+                            >
+                                SHARE
+                            </button>
+                        </div>
                         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '8px', justifyContent: 'center' }}>
                             <span style={{
                                 fontSize: '0.75rem',
@@ -225,6 +238,14 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                         )}
+                    </div>
+
+                    <div style={inputGroup}>
+                        <label style={labelStyle}>Contact Number</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input name="phoneCode" value={profile.phoneCode} onChange={handleChange} className="profile-input" style={{ width: '100px' }} placeholder="+254" />
+                            <input name="phoneNumber" value={profile.phoneNumber} onChange={handleChange} className="profile-input" style={{ flex: 1 }} placeholder="7XX XXX XXX" />
+                        </div>
                     </div>
 
                     <div style={inputGroup}>

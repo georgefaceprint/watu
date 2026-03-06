@@ -12,7 +12,8 @@ export default function OnboardPage() {
         maidenName: '',
         email: '',
         sex: '',
-        phone: '',
+        phoneCode: '+254',
+        phoneNumber: '',
         dob: '',
         birthOrder: '',
         birthPlace: '',
@@ -164,8 +165,11 @@ export default function OnboardPage() {
                             </div>
 
                             <div style={inputGroup}>
-                                <label style={labelStyle}>PHONE NUMBER <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL — MAKES IT EASY TO REMEMBER/RECOVER YOUR ID)</span></label>
-                                <input type="tel" placeholder="+254 7XX XXX XXX" name="phone" value={formData.phone} onChange={handleChange} className="input-field" />
+                                <label style={labelStyle}>PHONE NUMBER <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input placeholder="+254" name="phoneCode" value={formData.phoneCode} onChange={handleChange} className="input-field" style={{ width: '100px' }} />
+                                    <input type="tel" placeholder="7XX XXX XXX" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} className="input-field" style={{ flex: 1 }} />
+                                </div>
                             </div>
 
                             <button onClick={() => {
@@ -348,7 +352,19 @@ export default function OnboardPage() {
                             <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#fff', letterSpacing: '2px' }}>{result.id}</div>
                         </div>
 
-                        <button onClick={() => router.push('/connect')} className="btn-primary" style={{ width: '100%' }}>Start Connecting</button>
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            <button onClick={() => router.push('/connect')} className="btn-secondary" style={{ flex: 1 }}>Explore Network</button>
+                            <button
+                                onClick={() => {
+                                    const text = `Join me on Watu.Network! My Ancestral Identity Key is: *${result.id}*. Build your family heritage here: https://watu.network`;
+                                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                                }}
+                                className="btn-primary"
+                                style={{ flex: 1.5, background: '#25D366', border: 'none' }}
+                            >
+                                Share on WhatsApp
+                            </button>
+                        </div>
                     </div>
                 )}
 

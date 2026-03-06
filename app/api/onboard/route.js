@@ -5,7 +5,8 @@ import bcrypt from 'bcryptjs';
 export async function POST(request) {
     try {
         const {
-            name, surname, thirdName, fourthName, maidenName, sex, email, phone,
+            name, surname, thirdName, fourthName, maidenName, sex, email,
+            phoneCode, phoneNumber, // Refactored fields
             tribe, subTribe, clan, birthPlace, dob, birthOrder,
             securityQuestion, securityAnswer, password,
             isDeceased, deathYear, deathMonth
@@ -30,7 +31,8 @@ export async function POST(request) {
                 maidenName: $maidenName,
                 sex: $sex,
                 email: $email,
-                phone: $phone,
+                phoneCode: $phoneCode,
+                phoneNumber: $phoneNumber,
                 tribe: $tribe,
                 subTribe: $subTribe,
                 clan: $clan,
@@ -58,7 +60,8 @@ export async function POST(request) {
             maidenName: maidenName || '',
             sex,
             email: email || '',
-            phone: phone || '',
+            phoneCode: phoneCode || '+254',
+            phoneNumber: phoneNumber || '',
             tribe: tribe || '',
             subTribe: subTribe || '',
             clan: clan || '',
@@ -76,6 +79,12 @@ export async function POST(request) {
         const result = await executeQuery(query, params);
 
         if (result && result.length > 0) {
+            // TODO: INTEGRATE RESEND HERE
+            // if (process.env.RESEND_API_KEY && email) {
+            //     const resend = new Resend(process.env.RESEND_API_KEY);
+            //     await resend.emails.send({ ... });
+            // }
+
             return Response.json({
                 success: true,
                 id: result[0].get('id'),
