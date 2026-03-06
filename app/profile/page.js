@@ -2,7 +2,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { calculateCompleteness } from '@/lib/utils';
+import { calculateCompleteness, calculateAge } from '@/lib/utils';
+import { kenyanTribes } from '@/lib/clan_registry';
 import WatuIDCard from '../components/WatuIDCard';
 
 export default function ProfilePage() {
@@ -15,7 +16,6 @@ export default function ProfilePage() {
         name: 'LOADING...',
         surname: '',
         birthPlace: '',
-        birthYear: '',
         residency: '',
         profession: '',
         clan: '',
@@ -46,6 +46,12 @@ export default function ProfilePage() {
         { code: '+1', flag: '🇺🇸', name: 'USA' },
     ];
 
+    const birthPositions = [
+        'First Born', 'Second Born', 'Third Born', 'Fourth Born', 'Fifth Born',
+        'Sixth Born', 'Seventh Born', 'Eighth Born', 'Ninth Born', 'Tenth Born',
+        'Last Born', 'Only Child'
+    ];
+
     useEffect(() => {
         if (status === 'unauthenticated') {
             router.push('/login');
@@ -54,6 +60,16 @@ export default function ProfilePage() {
         }
     }, [session, status]);
 
+    const [selectedTribeData, setSelectedTribeData] = useState(null);
+
+    useEffect(() => {
+        if (profile.tribe) {
+            const tribe = kenyanTribes.find(t => t.name === profile.tribe);
+            setSelectedTribeData(tribe || null);
+        } else {
+            setSelectedTribeData(null);
+        }
+    }, [profile.tribe]);
     const fetchProfile = async (id) => {
         try {
             const res = await fetch(`/api/tree?personId=${id}`);
@@ -66,6 +82,9 @@ export default function ProfilePage() {
             console.error("Failed to load cloud profile:", err);
         }
     };
+
+    const kenyanTribesList = kenyanTribes?.map(t => t.name) || [];
+    const subTribesList = selectedTribeData ? selectedTribeData.subGroups : [];
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -105,342 +124,347 @@ export default function ProfilePage() {
     };
 
     return (
-        <div className="container" style={{ paddingBottom: '100px' }}>
-            <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-                <h1 style={{ fontSize: '2.5rem', color: 'var(--foreground)', marginBottom: '0.5rem' }}>PERSONAL HERITAGE</h1>
-                <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', margin: '0 auto' }}>BUILD YOUR DIGITAL LEGACY AND ENSURE YOUR PLACE IN THE ANCESTRAL VAULT.</p>
-            </div>
+        <div className="profile-wrapper">
+            <div className="profile-container container animate-fade-in">
+                {/* Header Section */}
+                <header className="profile-header">
+                    <h1 className="bold-title text-gradient">ANCESTRAL VAULT</h1>
+                    <p className="subtitle">CURATE YOUR LEGACY • PROTECT YOUR HERITAGE</p>
+                </header>
 
-            {/* DIGITAL WATU ID CARD - THE WOW COMPONENT */}
-            <div className="animate-fade-in" style={{ marginBottom: '4rem' }}>
-                <WatuIDCard person={profile} />
+                <div className="profile-grid">
+                    {/* Left Column: ID & Stats */}
+                    <div className="profile-sidebar">
+                        <div className="glass-card id-card-wrapper sticky-top">
+                            <WatuIDCard person={profile} />
 
-                {/* COMPLETENESS PROGRESS */}
-                <div style={{ maxWidth: '380px', margin: '-1rem auto 2rem auto', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--accent)', letterSpacing: '0.1em' }}>VAULT COMPLETION SCORE</span>
-                        <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#fff' }}>{calculateCompleteness(profile).percent}%</span>
-                    </div>
-                    <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
-                        <div style={{
-                            width: `${calculateCompleteness(profile).percent}%`,
-                            height: '100%',
-                            background: 'linear-gradient(90deg, var(--accent), var(--accent-secondary))',
-                            boxShadow: '0 0 10px var(--accent)',
-                            transition: 'width 0.8s ease'
-                        }}></div>
-                    </div>
-                    {!calculateCompleteness(profile).isComplete && (
-                        <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '8px', textAlign: 'center' }}>
-                            REQUIRED FOR CONNECTIONS: <span style={{ color: '#f87171' }}>{calculateCompleteness(profile).missing[0]?.toUpperCase()}</span> {calculateCompleteness(profile).missing.length > 1 && `& ${calculateCompleteness(profile).missing.length - 1} MORE`}
-                        </p>
-                    )}
-                </div>
-
-                <p style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 'bold', marginTop: '-1rem', opacity: 0.7 }}>
-                    TIP: CLICK CARD TO FLIP FOR QR VAULT
-                </p>
-            </div>
-
-            <div className="glass animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem', background: 'var(--card)' }}>
-                {/* Photo & Identity Section */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem' }}>
-                    <div style={{ position: 'relative' }}>
-                        <div
-                            style={{
-                                width: '160px',
-                                height: '160px',
-                                borderRadius: '40px',
-                                background: 'rgba(255, 255, 255, 0.05)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                overflow: 'hidden',
-                                border: '2px dashed rgba(99, 102, 241, 0.4)',
-                                boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease'
-                            }}
-                            className="profile-photo-container"
-                            onClick={() => fileInputRef.current.click()}
-                        >
-                            {profilePic ? (
-                                <img src={profilePic} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                                <div style={{ textAlign: 'center' }}>
-                                    <span style={{ fontSize: '3rem', display: 'block', marginBottom: '8px' }}>📸</span>
-                                    <span style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Upload Portrait</span>
+                            <div className="completeness-dashboard">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--accent)', letterSpacing: '0.1em' }}>VAULT INTEGRITY</span>
+                                    <span style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fff' }}>{calculateCompleteness(profile).percent}%</span>
                                 </div>
-                            )}
+                                <div className="progress-track">
+                                    <div className="progress-bar" style={{ width: `${calculateCompleteness(profile).percent}%` }}></div>
+                                </div>
+                                {!calculateCompleteness(profile).isComplete && (
+                                    <div className="missing-items">
+                                        <p style={{ fontSize: '0.65rem', color: '#f87171', marginBottom: '8px', fontWeight: 'bold' }}>LOCK ACTIVE: MISSING DATA</p>
+                                        <div className="tags">
+                                            {calculateCompleteness(profile).missing.map(m => (
+                                                <span key={m} className="missing-tag">{m.toUpperCase()}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={() => fileInputRef.current?.click()} className="btn-secondary flip-btn" style={{ width: '100%', marginTop: '1rem' }}>
+                                UPDATE BIOMETRIC PHOTO
+                            </button>
+                            <input type="file" ref={fileInputRef} onChange={handlePhotoChange} style={{ display: 'none' }} accept="image/*" />
                         </div>
-                        <button
-                            onClick={() => fileInputRef.current.click()}
-                            style={{
-                                position: 'absolute',
-                                bottom: '-10px',
-                                right: '-10px',
-                                width: '40px',
-                                height: '40px',
-                                border: 'none',
-                                background: 'var(--accent)',
-                                color: '#fff',
-                                borderRadius: '12px',
-                                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.25rem'
-                            }}>
-                            +
-                        </button>
                     </div>
 
-                    <div style={{ textAlign: 'center' }}>
-                        <h2 style={{ fontSize: '1.5rem', color: 'var(--foreground)', marginBottom: '0.25rem' }}>{profile.name}</h2>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <code style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent)', padding: '4px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>{profile.id || 'W-XJ92-K5P1'}</code>
+                    {/* Right Column: Form Sections */}
+                    <div className="profile-main">
+                        {/* Section 1: Vital Identity */}
+                        <div className="glass-card form-section shadow-lg">
+                            <h2 className="section-title"><span className="icon">👤</span> VITAL IDENTITY</h2>
+                            <div className="form-grid">
+                                <div className="input-group">
+                                    <label>Given Name</label>
+                                    <input name="name" value={profile.name} onChange={handleChange} className="bold-input" placeholder="LEGAL FIRST NAME" />
+                                </div>
+                                <div className="input-group">
+                                    <label>Family Surname</label>
+                                    <input name="surname" value={profile.surname} onChange={handleChange} className="bold-input" placeholder="ANCESTRAL SURNAME" />
+                                </div>
+                            </div>
+
+                            <div className="form-grid mt-4">
+                                <div className="input-group">
+                                    <label>Biological Sex</label>
+                                    <select name="sex" value={profile.sex} onChange={handleChange} className="bold-input">
+                                        <option value="">SELECT SEX</option>
+                                        <option value="MALE">MALE</option>
+                                        <option value="FEMALE">FEMALE</option>
+                                    </select>
+                                </div>
+                                <div className="input-group">
+                                    <label>Date of Birth {profile.dob && <span className="age-pill">{calculateAge(profile.dob)} YRS</span>}</label>
+                                    <input type="date" name="dob" value={profile.dob} onChange={handleChange} className="bold-input" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 2: Lineage & Roots */}
+                        <div className="glass-card form-section shadow-lg mt-6">
+                            <h2 className="section-title"><span className="icon">🌳</span> LINEAGE & ROOTS</h2>
+                            <div className="form-grid">
+                                <div className="input-group">
+                                    <label>Birth Position</label>
+                                    <select name="birthOrder" value={profile.birthOrder} onChange={handleChange} className="bold-input">
+                                        <option value="">SELECT POSITION</option>
+                                        {birthPositions.map(pos => <option key={pos} value={pos}>{pos.toUpperCase()}</option>)}
+                                    </select>
+                                </div>
+                                <div className="input-group">
+                                    <label>Country of Birth</label>
+                                    <select name="birthPlace" value={profile.birthPlace} onChange={handleChange} className="bold-input">
+                                        <option value="">SELECT COUNTRY</option>
+                                        {countryCodes.map(c => <option key={c.name} value={c.name}>{c.name.toUpperCase()}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="form-grid mt-4">
+                                <div className="input-group">
+                                    <label>Ancestral Tribe</label>
+                                    <select name="tribe" value={profile.tribe} onChange={handleChange} className="bold-input">
+                                        <option value="">SELECT TRIBE</option>
+                                        {kenyanTribesList.map(t => <option key={t} value={t}>{t.toUpperCase()}</option>)}
+                                    </select>
+                                </div>
+                                <div className="input-group">
+                                    <label>Sub-Tribe / Group</label>
+                                    <select name="subTribe" value={profile.subTribe} onChange={handleChange} className="bold-input">
+                                        <option value="">SELECT SUB-TRIBE</option>
+                                        {subTribesList.map(st => <option key={st} value={st}>{st.toUpperCase()}</option>)}
+                                        <option value="Other">OTHER / UNLISTED</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="input-group mt-4">
+                                <label>Ancestral Clan</label>
+                                <input name="clan" value={profile.clan} onChange={handleChange} className="bold-input" placeholder="e.g. KAPLELACH" />
+                            </div>
+                        </div>
+
+                        {/* Section 3: Vault Security & Contact */}
+                        <div className="glass-card form-section shadow-lg mt-6">
+                            <h2 className="section-title"><span className="icon">🔒</span> VAULT SECURITY</h2>
+                            <div className="input-group">
+                                <label>Security Recovery Question</label>
+                                <input name="securityQuestion" value={profile.securityQuestion} onChange={handleChange} className="bold-input" placeholder="e.g. YOUR FIRST PET'S NAME?" />
+                            </div>
+
+                            <div className="form-grid mt-4">
+                                <div className="input-group">
+                                    <label>Contact Number</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <select
+                                            name="phoneCode"
+                                            value={profile.phoneCode || '+254'}
+                                            onChange={handleChange}
+                                            className="bold-input"
+                                            style={{ width: '100px' }}
+                                        >
+                                            {countryCodes.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
+                                        </select>
+                                        <input name="phoneNumber" value={profile.phoneNumber} onChange={handleChange} className="bold-input" style={{ flex: 1 }} placeholder="7XX XXX XXX" />
+                                    </div>
+                                </div>
+                                <div className="input-group">
+                                    <label>Ancestral Profession</label>
+                                    <input name="profession" value={profile.profession} onChange={handleChange} className="bold-input" placeholder="e.g. SYSTEM ARCHITECT" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Bar */}
+                        <div className="action-bar mt-8">
                             <button
-                                onClick={() => {
-                                    const text = `Connect with my Ancestral Identity on Watu.Network! My ID: *${profile.id}*. Join path: https://watu.network/connect?id=${profile.id}`;
-                                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                                }}
-                                style={{ background: '#25D366', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                onClick={handleSubmit}
+                                className="btn-primary push-btn"
+                                disabled={updating}
+                                style={{ width: '100%', padding: '1.25rem', fontSize: '1.1rem', fontWeight: '900' }}
                             >
-                                SHARE
+                                {updating ? 'SYNCING WITH VAULT...' : 'COMMIT CHANGES TO HERITAGE'}
                             </button>
                         </div>
-                        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                            <span style={{
-                                fontSize: '0.75rem',
-                                background: profile.isDeceased ? 'rgba(248, 113, 113, 0.1)' : 'rgba(34, 197, 94, 0.1)',
-                                color: profile.isDeceased ? '#f87171' : '#22c55e',
-                                padding: '4px 12px',
-                                borderRadius: '999px',
-                                border: `1px solid ${profile.isDeceased ? 'rgba(248, 113, 113, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`,
-                                fontWeight: 'bold'
-                            }}>
-                                {profile.isDeceased ? 'ANSOSTRAL RECORD' : 'VERIFIED'}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div style={{ width: '100%', marginTop: 'auto' }}>
-                        <div style={{ padding: '1.25rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '20px', border: '1px solid var(--border)' }}>
-                            <h4 style={{ fontSize: '0.85rem', color: 'var(--foreground)', marginBottom: '1rem' }}>Heritage Connectivity</h4>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Status</span>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '600' }}>{profile.isDeceased ? 'Resting' : 'Active Member'}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Born</span>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '600' }}>
-                                    {profile.dob || profile.birthYear || 'TBD'}
-                                </span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Order</span>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '600' }}>{profile.birthOrder || 'Unknown'}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Family Branch</span>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--foreground)', fontWeight: '600' }}>Central Branch</span>
-                            </div>
-                        </div>
                     </div>
                 </div>
-
-                {/* Information Form */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div style={inputGroup}>
-                        <label style={labelStyle}>Full Legal Name</label>
-                        <input name="name" value={profile.name} onChange={handleChange} className="profile-input" />
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div style={inputGroup}>
-                            <label style={labelStyle}>Date of Birth</label>
-                            <input type="date" name="dob" value={profile.dob} onChange={handleChange} className="profile-input" />
-                        </div>
-                        <div style={inputGroup}>
-                            <label style={labelStyle}>Birth Position</label>
-                            <input name="birthOrder" value={profile.birthOrder} placeholder="e.g. First Born" onChange={handleChange} className="profile-input" />
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div style={inputGroup}>
-                            <label style={labelStyle}>Place of Birth</label>
-                            <input name="birthPlace" value={profile.birthPlace} onChange={handleChange} className="profile-input" />
-                        </div>
-                        <div style={inputGroup}>
-                            <label style={labelStyle}>Year of Birth</label>
-                            <input type="number" name="birthYear" value={profile.birthYear} onChange={handleChange} className="profile-input" />
-                        </div>
-                    </div>
-
-                    <div className="glass" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <input
-                                type="checkbox"
-                                name="isDeceased"
-                                id="profileIsDeceased"
-                                checked={profile.isDeceased}
-                                onChange={handleChange}
-                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                            />
-                            <label htmlFor="profileIsDeceased" style={{ fontSize: '0.85rem', color: 'var(--foreground)', fontWeight: '600', cursor: 'pointer' }}>Mark as Deceased Record</label>
-                        </div>
-
-                        {profile.isDeceased && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1rem' }} className="animate-fade-in">
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>Year of Passing</label>
-                                    <input type="number" name="deathYear" placeholder="e.g. 2005" value={profile.deathYear} onChange={handleChange} className="profile-input" />
-                                </div>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>Month</label>
-                                    <input name="deathMonth" placeholder="e.g. June" value={profile.deathMonth} onChange={handleChange} className="profile-input" />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div style={inputGroup}>
-                        <label style={labelStyle}>Contact Number</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <div style={{ position: 'relative', width: '120px' }}>
-                                <select
-                                    name="phoneCode"
-                                    value={profile.phoneCode || '+254'}
-                                    onChange={handleChange}
-                                    className="profile-input"
-                                    style={{ appearance: 'none', paddingLeft: '35px' }}
-                                >
-                                    {countryCodes.map(c => (
-                                        <option key={c.code} value={c.code}>
-                                            {c.code}
-                                        </option>
-                                    ))}
-                                </select>
-                                <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', pointerEvents: 'none' }}>
-                                    {countryCodes.find(c => c.code === (profile.phoneCode || '+254'))?.flag || '🌍'}
-                                </div>
-                            </div>
-                            <input name="phoneNumber" value={profile.phoneNumber} onChange={handleChange} className="profile-input" style={{ flex: 1 }} placeholder="7XX XXX XXX" />
-                        </div>
-                    </div>
-
-                    <div style={inputGroup}>
-                        <label style={labelStyle}>Current Residence</label>
-                        <input name="residency" value={profile.residency} onChange={handleChange} className="profile-input" />
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div style={inputGroup}>
-                            <label style={labelStyle}>Ancestral Clan</label>
-                            <input name="clan" value={profile.clan} onChange={handleChange} className="profile-input" />
-                        </div>
-                        <div style={inputGroup}>
-                            <label style={labelStyle}>Sub-Tribe / Group</label>
-                            <input name="subTribe" value={profile.subTribe} placeholder="e.g. Nandi" onChange={handleChange} className="profile-input" />
-                        </div>
-                    </div>
-
-                    <div style={inputGroup}>
-                        <label style={labelStyle}>Security Recovery Question</label>
-                        <input name="securityQuestion" value={profile.securityQuestion} placeholder="e.g. Your first pet's name?" onChange={handleChange} className="profile-input" />
-                    </div>
-
-                    <div style={inputGroup}>
-                        <label style={labelStyle}>Profession</label>
-                        <input name="profession" value={profile.profession} onChange={handleChange} className="profile-input" />
-                    </div>
-
-                    <button
-                        onClick={handleSubmit}
-                        className="btn-primary"
-                        disabled={updating}
-                        style={{ padding: '1rem', marginTop: '1rem', width: '100%' }}
-                    >
-                        {updating ? 'SAVING TO VAULT...' : 'Update Heritage Records'}
-                    </button>
-
-                    <input type="file" accept="image/*" ref={fileInputRef} onChange={handlePhotoChange} style={{ display: 'none' }} />
-                </div>
-            </div>
-
-            {/* Heritage Protection Section */}
-            <div className="glass animate-fade-in" style={{
-                maxWidth: '700px',
-                margin: '3rem auto',
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)',
-                border: '1px solid rgba(99, 102, 241, 0.3)',
-                padding: '2rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '2rem',
-                flexWrap: 'wrap'
-            }}>
-                <div style={{
-                    width: '64px',
-                    height: '64px',
-                    background: 'rgba(99, 102, 241, 0.1)',
-                    borderRadius: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '2rem'
-                }}>🛡️</div>
-                <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '1.25rem', color: '#fff', marginBottom: '0.5rem' }}>Heritage Protection Scheme</h3>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0 }}>Protect your family branch in the event of an emergency. Link this profile to a <strong>MyHazina Funeral Plan</strong> to ensure your legacy continues.</p>
-                </div>
-                <a href="https://myhazina.org" target="_blank">
-                    <button className="btn-secondary" style={{ padding: '0.75rem 2rem' }}>Link MyHazina</button>
-                </a>
             </div>
 
             <style dangerouslySetInnerHTML={{
                 __html: `
-                .profile-input {
+                .profile-wrapper {
+                    min-height: 100vh;
+                    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent),
+                                radial-gradient(circle at bottom left, rgba(79, 70, 229, 0.1), transparent),
+                                #0f172a;
+                    padding: 4rem 1rem 8rem 1rem;
+                }
+                .profile-header {
+                    text-align: center;
+                    margin-bottom: 4rem;
+                }
+                .bold-title {
+                    font-size: 3.5rem;
+                    font-weight: 950;
+                    letter-spacing: -0.05em;
+                    margin-bottom: 0.5rem;
+                }
+                .text-gradient {
+                    background: linear-gradient(to right, #fff, #94a3b8);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
+                .subtitle {
+                    color: var(--accent);
+                    font-weight: 800;
+                    letter-spacing: 0.3em;
+                    font-size: 0.75rem;
+                }
+                .profile-grid {
+                    display: grid;
+                    grid-template-columns: 380px 1fr;
+                    gap: 3rem;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                }
+                .glass-card {
+                    background: rgba(255, 255, 255, 0.03);
+                    backdrop-filter: blur(20px);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 32px;
+                    padding: 2.5rem;
+                    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                .sticky-top {
+                    position: sticky;
+                    top: 2rem;
+                }
+                .section-title {
+                    font-size: 1.1rem;
+                    font-weight: 900;
+                    color: #fff;
+                    margin-bottom: 2rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    letter-spacing: 0.05em;
+                }
+                .section-title .icon {
+                    background: rgba(99, 102, 241, 0.1);
+                    width: 36px;
+                    height: 36px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 10px;
+                    font-size: 1rem;
+                }
+                .form-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 1.5rem;
+                }
+                .input-group label {
+                    display: block;
+                    font-size: 0.65rem;
+                    font-weight: 800;
+                    color: #64748b;
+                    text-transform: uppercase;
+                    letter-spacing: 0.1em;
+                    margin-bottom: 10px;
+                    margin-left: 4px;
+                }
+                .bold-input {
                     width: 100%;
-                    padding: 0.85rem 1rem;
-                    border-radius: 12px;
-                    border: 1px solid rgba(255,255,255,0.1);
-                    background: rgba(255,255,255,0.03);
-                    color: white;
-                    font-size: 0.95rem;
-                    font-family: inherit;
+                    padding: 1.1rem 1.5rem;
+                    background: rgba(0,0,0,0.2);
+                    border: 1px solid rgba(255,255,255,0.05);
+                    border-radius: 18px;
+                    color: #fff;
+                    font-weight: 600;
+                    font-size: 1rem;
                     outline: none;
-                    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+                    transition: all 0.3s ease;
                 }
-                .profile-input:focus {
-                    background: rgba(255,255,255,0.08);
+                .bold-input:focus {
+                    background: rgba(255,255,255,0.05);
                     border-color: var(--accent);
-                    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+                    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+                    transform: translateY(-2px);
                 }
-                .profile-photo-container:hover {
-                    box-shadow: 0 30px 60px rgba(0,0,0,0.6);
-                    transform: translateY(-5px);
-                    border-color: var(--accent);
+                .age-pill {
+                    background: var(--accent);
+                    color: #fff;
+                    padding: 2px 8px;
+                    border-radius: 6px;
+                    font-size: 0.6rem;
+                    margin-left: 8px;
+                }
+                .progress-track {
+                    height: 10px;
+                    background: rgba(0,0,0,0.3);
+                    border-radius: 20px;
+                    overflow: hidden;
+                    margin-bottom: 1.5rem;
+                }
+                .progress-bar {
+                    height: 100%;
+                    background: linear-gradient(to right, var(--accent), var(--accent-secondary));
+                    box-shadow: 0 0 15px var(--accent);
+                    transition: width 1s ease;
+                }
+                .missing-tag {
+                    display: inline-block;
+                    font-size: 0.55rem;
+                    padding: 4px 10px;
+                    background: rgba(239, 68, 68, 0.1);
+                    color: #f87171;
+                    border-radius: 6px;
+                    font-weight: 900;
+                    margin-right: 6px;
+                    margin-bottom: 6px;
+                }
+                .push-btn {
+                    transform: scale(1);
+                    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3);
+                    border: none;
+                    background: var(--accent);
+                    color: #fff;
+                    cursor: pointer;
+                    border-radius: 18px;
+                }
+                .push-btn:hover:not(:disabled) {
+                    transform: scale(1.02) translateY(-2px);
+                    box-shadow: 0 25px 50px rgba(99, 102, 241, 0.4);
+                }
+                .push-btn:active {
+                    transform: scale(0.98);
+                }
+                .mt-4 { margin-top: 1rem; }
+                .mt-6 { margin-top: 1.5rem; }
+                .mt-8 { margin-top: 2rem; }
+                
+                @media (max-width: 1024px) {
+                    .profile-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .sticky-top {
+                        position: static;
+                    }
+                    .bold-title {
+                        font-size: 2.5rem;
+                    }
+                }
+                @media (max-width: 640px) {
+                    .form-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .glass-card {
+                        padding: 1.5rem;
+                    }
                 }
             `}} />
         </div>
     );
 }
 
-const inputGroup = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.65rem'
-};
-
-const labelStyle = {
-    fontSize: '0.75rem',
-    fontWeight: '700',
-    color: 'var(--text-secondary)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    marginLeft: '2px'
-};
+const inputGroup = {};
+const labelStyle = {};
