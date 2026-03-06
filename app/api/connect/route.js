@@ -89,32 +89,36 @@ export async function POST(request) {
             RETURN p1.name as from, p2.id as newId, p2.name as to
         `;
 
-        try {
-            const records = await executeQuery(query, {
-                personId,
-                newId,
-                name: details.name,
-                surname: details.surname,
-                thirdName: details.thirdName || '',
-                fourthName: details.fourthName || '',
-                sex: details.sex,
-                maidenName: details.maidenName || '',
-                isDeceased: !!details.isDeceased,
-                deathYear: details.deathYear || '',
-                deathMonth: details.deathMonth || ''
-            });
-            return Response.json({ success: true, id: newId, message: 'RELATIVE ADDED & CONNECTED' });
-        } catch (err) {
-            return Response.json({ error: err.message }, { status: 500 });
+        const records = await executeQuery(query, {
+            personId,
+            newId,
+            name: details.name,
+            surname: details.surname,
+            thirdName: details.thirdName || '',
+            fourthName: details.fourthName || '',
+            sex: details.sex,
+            maidenName: details.maidenName || '',
+            isDeceased: !!details.isDeceased,
+            deathYear: details.deathYear || '',
+            deathMonth: details.deathMonth || ''
+        });
+
+        if (records.length === 0) {
+            return Response.json({ error: `The ID you are acting as (${personId}) was not found in our records.` }, { status: 404 });
         }
-    }
 
-    const allowedRelationships = ['SIBLING_OF', 'PARENT_OF', 'SPOUSE_OF', 'CHILD_OF'];
-    if (!allowedRelationships.includes(relationship)) {
-        return Response.json({ error: 'Invalid relationship type' }, { status: 400 });
+        return Response.json({ success: true, id: newId, message: 'RELATIVE ADDED & CONNECTED' });
+    } catch (err) {
+        return Response.json({ error: err.message }, { status: 500 });
     }
+}
 
-    const query = `
+const allowedRelationships = ['SIBLING_OF', 'PARENT_OF', 'SPOUSE_OF', 'CHILD_OF'];
+if (!allowedRelationships.includes(relationship)) {
+    return Response.json({ error: 'Invalid relationship type' }, { status: 400 });
+}
+
+const query = `
         MATCH (p1:Person {id: $personId})
         MATCH (p2:Person {id: $relativeId})
         MERGE (p1)-[r:${relationship}]->(p2)
@@ -122,15 +126,15 @@ export async function POST(request) {
         RETURN p1.name as from, type(r) as rel, p2.name as to, r.status as status
     `;
 
-    try {
-        const records = await executeQuery(query, { personId, relativeId });
-        if (records.length === 0) throw new Error('Person or Relative not found');
-        return Response.json({
-            success: true,
-            status: records[0].get('status'),
-            connection: records[0].toObject()
-        });
-    } catch (err) {
-        return Response.json({ error: err.message }, { status: 500 });
-    }
+try {
+    const records = await executeQuery(query, { personId, relativeId });
+    if (records.length === 0) throw new Error('Person or Relative not found');
+    return Response.json({
+        success: true,
+        status: records[0].get('status'),
+        connection: records[0].toObject()
+    });
+} catch (err) {
+    return Response.json({ error: err.message }, { status: 500 });
+}
 }

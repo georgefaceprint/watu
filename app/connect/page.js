@@ -65,6 +65,11 @@ export default function ConnectPage() {
         }
     };
 
+    useEffect(() => {
+        const storedId = localStorage.getItem('watu_id');
+        if (storedId) setMyId(storedId);
+    }, []);
+
     const handleSearch = async (e) => {
         e.preventDefault();
         setLoading(true);
