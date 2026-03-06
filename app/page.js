@@ -1,8 +1,10 @@
 'use client';
 import FamilyTreeVis from './components/FamilyTreeVis';
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 
 export default function HomePage() {
+    const { data: session } = useSession();
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
@@ -32,9 +34,14 @@ export default function HomePage() {
     };
 
     useEffect(() => {
-        // Fetch a default highlight or use 'USER_123' as demo
-        fetchTree('S7A4B1'); // Seeding with a default highlight if one exists
-    }, []);
+        if (session?.user?.watuId) {
+            setSearchId(session.user.watuId);
+            fetchTree(session.user.watuId);
+        } else {
+            // Fallback for guests or if session not ready
+            fetchTree('S7A4B1');
+        }
+    }, [session]);
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: '3rem', paddingBottom: '100px' }}>

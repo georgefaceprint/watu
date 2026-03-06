@@ -25,9 +25,19 @@ export default function FamilyTreeVis({ data, onNodeClick }) {
         const g = svg.append("g");
 
         // Zoom & Pan
-        svg.call(d3.zoom()
-            .scaleExtent([0.3, 3])
-            .on("zoom", (event) => g.attr("transform", event.transform)));
+        const zoom = d3.zoom()
+            .scaleExtent([0.2, 5])
+            .on("zoom", (event) => g.attr("transform", event.transform));
+
+        svg.call(zoom);
+
+        // Add a "Reset Zoom" function accessible via double-click on background
+        svg.on("dblclick.zoom", () => {
+            svg.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity.translate(width / 2, height / 2).scale(0.8).translate(-width / 2, -height / 2)
+            );
+        });
 
         // Force Simulation
         const simulation = d3.forceSimulation(data.nodes)
