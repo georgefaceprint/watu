@@ -68,6 +68,15 @@ export default function FamilyTreeVis({ data, onNodeClick }) {
             .on("click", (event, d) => onNodeClick && onNodeClick(d))
             .style("cursor", "pointer");
 
+        // Hidden Hit Area for better touch (Mobile)
+        node.append("rect")
+            .attr("width", 120)
+            .attr("height", 60)
+            .attr("x", -60)
+            .attr("y", -30)
+            .attr("fill", "transparent")
+            .style("pointer-events", "all");
+
         // Premium Node Background
         node.append("rect")
             .attr("width", 100)
@@ -148,9 +157,74 @@ export default function FamilyTreeVis({ data, onNodeClick }) {
             borderRadius: '24px',
             background: 'var(--card-hover)',
             border: '1px solid var(--border)',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            position: 'relative'
         }}>
-            <svg ref={svgRef}></svg>
+            {/* Mobile-Friendly Zoom Controls */}
+            <div style={{
+                position: 'absolute',
+                bottom: '20px',
+                right: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                zIndex: 20
+            }}>
+                <button
+                    onClick={() => {
+                        const svg = d3.select(svgRef.current);
+                        svg.transition().duration(300).call(d3.zoom().scaleBy, 1.3);
+                    }}
+                    style={zoomBtnStyle}
+                >+</button>
+                <button
+                    onClick={() => {
+                        const svg = d3.select(svgRef.current);
+                        svg.transition().duration(300).call(d3.zoom().scaleBy, 0.7);
+                    }}
+                    style={zoomBtnStyle}
+                >-</button>
+                <button
+                    onClick={() => {
+                        const svg = d3.select(svgRef.current);
+                        const width = 800;
+                        const height = 500;
+                        svg.transition().duration(750).call(
+                            d3.zoom().transform,
+                            d3.zoomIdentity.translate(width / 2, height / 2).scale(0.8).translate(-width / 2, -height / 2)
+                        );
+                    }}
+                    style={zoomBtnStyle}
+                >🎯</button>
+            </div>
+
+            <svg ref={svgRef} style={{ touchAction: 'none' }}></svg>
+
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    .tree-container {
+                        height: 400px !important;
+                    }
+                }
+            `}</style>
         </div>
     );
 }
+
+const zoomBtnStyle = {
+    width: '40px',
+    height: '40px',
+    borderRadius: '12px',
+    background: 'rgba(255, 255, 255, 0.9)',
+    border: '1px solid #e2e8f0',
+    color: '#0f172a',
+    fontSize: '1.25rem',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    backdropFilter: 'blur(10px)',
+    transition: 'all 0.2s'
+};
