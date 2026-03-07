@@ -189,22 +189,41 @@ export default function LoginPage() {
                 {/* ─── SOCIAL TAB ─── */}
                 {tab === 'social' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <button onClick={() => signIn('google', { callbackUrl: '/' })} className="social-auth-btn" id="google-signin-btn">
+                        <button
+                            onClick={(e) => { e.preventDefault(); setLoading(true); signIn('google', { callbackUrl: '/' }); }}
+                            disabled={loading}
+                            className="social-auth-btn"
+                            id="google-signin-btn"
+                            style={{ background: 'var(--card)', border: '1px solid var(--accent)', color: 'var(--foreground)' }}
+                        >
                             <svg width="20" height="20" viewBox="0 0 48 48">
                                 <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-4z" />
                                 <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.6 8.3 6.3 14.7z" />
                                 <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3-11.3-7.3L6 33.5C9.3 39.7 16.1 44 24 44z" />
                                 <path fill="#1565C0" d="M43.6 20H24v8h11.3c-.8 2.3-2.4 4.2-4.4 5.5l6.2 5.2C41.4 35.3 44 30 44 24c0-1.3-.1-2.7-.4-4z" />
                             </svg>
-                            <span>CONTINUE WITH GOOGLE</span>
+                            <span>{loading && tab === 'social' ? 'CONNECTING...' : 'CONTINUE WITH GOOGLE'}</span>
                         </button>
 
-                        <button onClick={() => signIn('apple', { callbackUrl: '/' })} className="social-auth-btn" id="apple-signin-btn" style={{ background: 'rgba(255,255,255,0.96)', color: '#000' }}>
+                        <button
+                            onClick={(e) => { e.preventDefault(); setLoading(true); signIn('apple', { callbackUrl: '/' }); }}
+                            disabled={loading}
+                            className="social-auth-btn"
+                            id="apple-signin-btn"
+                            style={{ background: '#000', color: '#fff', borderColor: '#000' }}
+                        >
                             <svg width="20" height="20" viewBox="0 0 814 1000">
                                 <path fill="currentColor" d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.7 268.8-317.7 99.8 0 183 65.8 245.3 65.8 59.2 0 152-69.1 271.5-69.1zm-17.2-159.1c-49.3 0-121.4-33.2-170.4-82.1-43.1-43.4-82.5-115.3-82.5-187.2 0-9.5.8-19 2.3-27.3h2.3c54.8 0 136.2 37.2 185.6 91.5 44.5 49.7 80.8 120.8 80.8 192.6 0 9.5-1.5 19-2.3 27.3-2.3.3-6.7 1.3-15.8-15z" />
                             </svg>
-                            <span>CONTINUE WITH APPLE</span>
+                            <span>{loading && tab === 'social' ? 'WAITING...' : 'CONTINUE WITH APPLE'}</span>
                         </button>
+
+                        <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                                OAuth Status: <span style={{ color: 'var(--accent)', fontWeight: 800 }}>ACTIVE</span> //
+                                <br />Ensure Google Callback is: <code>{typeof window !== 'undefined' ? window.location.origin + '/api/auth/callback/google' : 'localhost:3000/api/auth/callback/google'}</code>
+                            </p>
+                        </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '0.5rem 0' }}>
                             <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />

@@ -86,30 +86,39 @@ export const authOptions = {
         async signIn({ user, account }) {
             // For OAuth (Google/Apple), auto-create a Person node if not exists
             if (account?.provider === "google" || account?.provider === "apple") {
-                const existingResult = await executeQuery(
-                    `MATCH (p:Person {email: $email}) RETURN p.id as id LIMIT 1`,
-                    { email: user.email }
-                );
-                if (existingResult.length === 0) {
-                    // Create a stub profile — they complete the rest via /profile
-                    const { generateUniqueId } = await import("@/lib/utils");
-                    const id = generateUniqueId();
-                    await executeQuery(
-                        `CREATE (p:Person {
-                            id: $id,
-                            name: $name,
-                            surname: '',
-                            email: $email,
-                            isCitizen: true,
-                            isDeceased: false,
-                            provider: $provider,
-                            createdAt: datetime()
-                        })`,
-                        { id, name: user.name?.split(" ")[0] || "NEW", email: user.email, provider: account.provider }
+                try {
+                    console.log(`📡 NEXTAUTH: Attempting ${account.provider} sign-in for ${user.email}`);
+                    const existingResult = await executeQuery(
+                        `MATCH (p:Person {email: $email}) RETURN p.id as id LIMIT 1`,
+                        { email: user.email }
                     );
-                    user.id = id;
-                } else {
-                    user.id = existingResult[0].get("id");
+                    if (existingResult.length === 0) {
+                        console.log(`🌱 NEXTAUTH: New user detected. Creating stub profile...`);
+                        const { generateUniqueId } = await import("@/lib/utils");
+                        const id = generateUniqueId();
+                        await executeQuery(
+                            `CREATE (p:Person {
+                                id: $id,
+                                name: $name,
+                                surname: '',
+                                email: $email,
+                                isCitizen: true,
+                                isDeceased: false,
+                                provider: $provider,
+                                createdAt: datetime()
+                            })`,
+                            { id, name: user.name?.split(" ")[0] || "NEW", email: user.email, provider: account.provider }
+                        );
+                        user.id = id;
+                        console.log(`✅ NEXTAUTH: Profile created with ID: ${id}`);
+                    } else {
+                        user.id = existingResult[0].get("id");
+                        console.log(`🔗 NEXTAUTH: Connected to existing profile ID: ${user.id}`);
+                    }
+                    return true;
+                } catch (err) {
+                    console.error("❌ NEXTAUTH SIGN-IN ERROR:", err);
+                    return false; // Prevent sign-in if database creation fails
                 }
             }
             return true;
