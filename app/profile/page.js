@@ -61,6 +61,7 @@ export default function ProfilePage() {
     ];
 
     useEffect(() => {
+        if (status === 'loading') return; // Don't redirect during session load
         if (status === 'unauthenticated') {
             router.push('/login');
         } else if (session?.user?.id) {
