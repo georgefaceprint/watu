@@ -1,11 +1,24 @@
+import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
 import PWAInstaller from '../components/PWAInstaller';
 import AuthProvider from '../components/AuthProvider';
 import SignOutButton from '../components/SignOutButton';
 import ProfileCompletion from './components/ProfileCompletion';
 
+const inter = Inter({
+    subsets: ['latin'],
+    variable: '--font-inter',
+    display: 'swap',
+});
+
+const outfit = Outfit({
+    subsets: ['latin'],
+    variable: '--font-outfit',
+    display: 'swap',
+});
+
 export const viewport = {
-    themeColor: '#f8fafc',
+    themeColor: '#0f172a',
     width: 'device-width',
     initialScale: 1,
     maximumScale: 1,
@@ -15,16 +28,17 @@ export const viewport = {
 export const metadata = {
     title: 'Watu.Network - Trace Your Heritage',
     description: 'A global collaborative family tree tracing connections and heritage.',
+    manifest: '/manifest.json',
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: 'default',
+        title: 'Watu'
+    },
 };
 
 export default function RootLayout({ children }) {
     return (
-        <html lang="en">
-            <head>
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-                <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-            </head>
+        <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
             <body>
                 <AuthProvider>
                     <header style={{
