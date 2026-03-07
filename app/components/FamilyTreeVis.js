@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
 /**
- * FOCUS-FLOW (Option 4): High-Performance, Cinematic Family Heritage UI
- * Optimized for Watu.Network Premium Experience with ForeignObject Cards
+ * RESPONSIVE FOCUS-FLOW: Premium Family Heritage UI
+ * Optimized for both Mobile (Touch) and Desktop (Web)
  */
 export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
     const svgRef = useRef(null);
@@ -23,8 +23,13 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
             }
         };
         updateDims();
+        const resizeObserver = new ResizeObserver(updateDims);
+        if (containerRef.current) resizeObserver.observe(containerRef.current);
         window.addEventListener('resize', updateDims);
-        return () => window.removeEventListener('resize', updateDims);
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', updateDims);
+        };
     }, []);
 
     useEffect(() => {
@@ -32,13 +37,21 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
 
         const svg = d3.select(svgRef.current);
         const { width, height } = dimensions;
+        const isMobile = width < 768;
+
+        // ─── ADAPTIVE SIZES ──────────────────────────────────
+        const cardW = isMobile ? 220 : 280;
+        const cardH = isMobile ? 280 : 360;
+        const gapY = isMobile ? 350 : 450;
+        const gapX = isMobile ? 60 : 100;
 
         // ─── INIT SVG ───────────────────────────────────────
         if (!gRef.current) {
             svg.selectAll("*").remove();
 
-            // Glow Definition
             const defs = svg.append("defs");
+
+            // Glow Definition
             const filter = defs.append("filter")
                 .attr("id", "glow")
                 .attr("x", "-50%")
@@ -80,14 +93,8 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         }
 
         const g = gRef.current;
-        const cardW = 280;
-        const cardH = 360;
-        const gapY = 450;
-        const gapX = 100;
-
-        // ─── DATA LAYOUT (FOCUS-FLOW) ────────────────────────
-        const nodes = [...data.nodes];
-        const links = [...data.links];
+        const nodes = data.nodes.map(n => ({ ...n }));
+        const links = data.links.map(l => ({ ...l }));
         const nodeMap = new Map(nodes.map(n => [n.id, n]));
         const focusNode = nodeMap.get(focusId) || nodes[0];
         const currentFocusId = focusNode?.id;
@@ -95,7 +102,6 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         if (!currentFocusId) return;
 
         // ─── DYNAMIC GENERATIONAL MAPPING (BFS) ──────────────
-        // This calculates the generational offset from the focus node
         const queue = [{ id: currentFocusId, gen: 0 }];
         const visited = new Set([currentFocusId]);
         const nodeGenMap = { [currentFocusId]: 0 };
@@ -105,23 +111,17 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
             links.forEach(l => {
                 let neighborId = null;
                 let nextGen = gen;
-
                 if (l.source === id) {
                     neighborId = l.target;
                     if (l.type === 'CHILD_OF') nextGen = gen - 1;
                     else if (l.type === 'PARENT_OF') nextGen = gen + 1;
-                    else if (l.type === 'GRANDPARENT_OF') nextGen = gen + 2;
-                    else if (l.type === 'GRANDCHILD_OF') nextGen = gen - 2;
-                    else nextGen = gen; // Spouses, Siblings, Cousins
+                    else nextGen = gen;
                 } else if (l.target === id) {
                     neighborId = l.source;
                     if (l.type === 'CHILD_OF') nextGen = gen + 1;
                     else if (l.type === 'PARENT_OF') nextGen = gen - 1;
-                    else if (l.type === 'GRANDPARENT_OF') nextGen = gen - 2;
-                    else if (l.type === 'GRANDCHILD_OF') nextGen = gen + 2;
-                    else nextGen = gen; // Spouses, Siblings, Cousins
+                    else nextGen = gen;
                 }
-
                 if (neighborId && !visited.has(neighborId)) {
                     visited.add(neighborId);
                     nodeGenMap[neighborId] = nextGen;
@@ -131,8 +131,6 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         }
 
         const levels = {};
-
-        // 1st Pass: Assign Levels
         nodes.forEach(n => {
             const gen = nodeGenMap[n.id];
             if (gen !== undefined) {
@@ -140,45 +138,13 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 if (!levels[gen]) levels[gen] = [];
                 levels[gen].push(n);
             } else {
-                n.level = 99; // Orphaned from focus
+                n.level = 99;
             }
         });
 
-        // 2nd Pass: Filter Links (Now that levels are guaranteed)
         const visibleLinks = links.filter(l => nodeMap.get(l.source)?.level !== 99 && nodeMap.get(l.target)?.level !== 99);
 
-        // 3rd Pass: Assign Descriptive Labels relative to focus
-        nodes.forEach(n => {
-            if (n.level === 99) return;
-            const gen = n.level;
-            const isFemale = n.sex?.toLowerCase() === 'female' || n.maidenName;
-
-            if (gen === 0) {
-                if (n.id === currentFocusId) {
-                    n.relLabel = 'ARCHIVE FOCUS';
-                } else {
-                    const linkToFocus = visibleLinks.find(l => (l.source === currentFocusId && l.target === n.id) || (l.target === currentFocusId && l.source === n.id));
-
-                    // PRO-LEVEL LOGIC: Infer siblinghood from shared parent links if explicit link is missing
-                    const focusParentIds = visibleLinks.filter(l => (l.source === currentFocusId && l.type === 'CHILD_OF') || (l.target === currentFocusId && l.type === 'PARENT_OF')).map(l => l.source === currentFocusId ? l.target : l.source);
-                    const nodeParentIds = visibleLinks.filter(l => (l.source === n.id && l.type === 'CHILD_OF') || (l.target === n.id && l.type === 'PARENT_OF')).map(l => l.source === n.id ? l.target : l.source);
-                    const isSibling = linkToFocus?.type === 'SIBLING_OF' || (focusParentIds.length > 0 && focusParentIds.some(pid => nodeParentIds.includes(pid)));
-
-                    if (linkToFocus?.type === 'SPOUSE_OF') n.relLabel = isFemale ? 'WIFE' : 'HUSBAND';
-                    else if (isSibling) n.relLabel = isFemale ? 'SISTER' : 'BROTHER';
-                    else if (linkToFocus?.type === 'COUSIN_OF') n.relLabel = 'COUSIN';
-                    else n.relLabel = 'CLAN KIN';
-                }
-            } else if (gen === -1) n.relLabel = isFemale ? 'MOTHER' : 'FATHER';
-            else if (gen === -2) n.relLabel = isFemale ? 'GRANDMOTHER' : 'GRANDFATHER';
-            else if (gen === -3) n.relLabel = isFemale ? 'GREAT GRANDMOTHER' : 'GREAT GRANDFATHER';
-            else if (gen < -3) n.relLabel = `L${Math.abs(gen)} ANCESTOR`;
-            else if (gen === 1) n.relLabel = isFemale ? 'DAUGHTER' : 'SON';
-            else if (gen === 2) n.relLabel = isFemale ? 'GRANDDAUGHTER' : 'GRANDSON';
-            else if (gen > 2) n.relLabel = `L${gen} DESCENDANT`;
-        });
-
-        // Position nodes using sorted generational levels
+        // Position nodes
         const sortedLevels = Object.keys(levels).map(Number).sort((a, b) => a - b);
         sortedLevels.forEach(lvl => {
             const nodesInLvl = levels[lvl];
@@ -190,39 +156,29 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         });
 
         const visibleNodes = nodes.filter(n => n.level !== 99);
-        const t = d3.transition().duration(1000).ease(d3.easeCubicInOut);
+        const t = d3.transition().duration(800).ease(d3.easeCubicInOut);
 
-        // Links
-        const link = g.selectAll(".link")
-            .data(visibleLinks, d => `${d.source}-${d.target}`);
-
+        // ─── RENDERING ───────────────────────────────────────
+        const link = g.selectAll(".link").data(visibleLinks, d => `${d.source}-${d.target}`);
         link.exit().transition(t).style("opacity", 0).remove();
-
         const linkEnter = link.enter().append("path")
             .attr("class", "link")
             .attr("fill", "none")
             .attr("stroke", "var(--accent)")
             .attr("stroke-width", 2)
-            .style("opacity", 0.15)
-            .style("stroke-dasharray", d => d.type === 'SPOUSE_OF' ? "5,5" : "none")
             .style("opacity", 0);
 
         link.merge(linkEnter).transition(t)
-            .style("opacity", 1)
+            .style("opacity", 0.3)
             .attr("d", d => {
                 const s = nodeMap.get(d.source);
                 const t = nodeMap.get(d.target);
-                if (d.type === 'SPOUSE_OF') {
-                    return `M ${s.x},${s.y} L ${t.x},${t.y}`;
-                }
+                if (!s || !t) return "";
                 const midY = (s.y + t.y) / 2;
                 return `M ${s.x},${s.y} C ${s.x},${midY} ${t.x},${midY} ${t.x},${t.y}`;
             });
 
-        // ─── RENDER NODES ────────────────────────────────────
-        const node = g.selectAll(".node")
-            .data(visibleNodes, d => d.id);
-
+        const node = g.selectAll(".node").data(visibleNodes, d => d.id);
         node.exit().transition(t).style("opacity", 0).remove();
 
         const nodeEnter = node.enter().append("foreignObject")
@@ -235,70 +191,39 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
             .on("click", (e, d) => onNodeClick && onNodeClick(d));
 
         nodeEnter.append("xhtml:div")
-            .attr("class", d => `person-card ${d.id === currentFocusId ? 'active' : ''} ${d.isDeceased ? 'deceased' : ''}`)
+            .attr("class", d => `person-card ${d.id === (focusId || currentFocusId) ? 'active' : ''} ${d.isDeceased ? 'deceased' : ''}`)
             .html(d => `
                 <div class="card-glass"></div>
                 <div class="card-content">
                     <div class="avatar-container">
-                        ${d.photo ? `<img src="${d.photo}" alt="${d.name}" class="avatar-img" />` : `<div class="avatar-fallback">${d.sex === 'female' ? '👩' : '👨'}</div>`}
-                        ${d.id === currentFocusId ? '<div class="focus-pulse"></div>' : ''}
+                        ${d.photo ? `<img src="${d.photo}" class="avatar-img" />` : `<div class="avatar-fallback">${d.sex === 'female' ? '👩' : '👨'}</div>`}
                     </div>
                     <div class="card-info">
-                        <div class="tag-row">
-                            <span class="tribe-tag ${d.level < 0 ? 'gen-ancestor' : d.level > 0 ? 'gen-descendant' : 'gen-active'}">${d.tribe || 'WATU'}</span>
-                            <span class="status-tag">${d.relLabel || 'RELATIVE'}</span>
-                        </div>
+                        <span class="rel-label">${d.id === (focusId || currentFocusId) ? 'FOCUS' : (d.tribe || 'RELATIVE')}</span>
                         <h3 class="name">${d.name}</h3>
-                        <h4 class="surname">${d.surname}</h4>
-                        
-                        ${d.id === currentFocusId
-                    ? `<div class="focus-indicator">
-                                <span class="pulse-dot"></span>
-                                ACTIVE FOCUS
-                               </div>`
-                    : `<button class="focus-btn">
-                                MAKE FOCUS
-                               </button>`
-                }
-
-                        <div class="meta-data">
-                            <span>ID: ${d.id}</span>
-                            <span>GEN: ${d.level === 0 ? 'CORE' : (d.level > 0 ? '+' + d.level : d.level)}</span>
-                        </div>
+                        <h4 class="surname">${d.surname || ''}</h4>
                     </div>
-                </div>
-                <div class="card-accents">
-                    <div class="corner tl"></div>
-                    <div class="corner tr"></div>
-                    <div class="corner bl"></div>
-                    <div class="corner br"></div>
                 </div>
             `);
 
         const nodeUpdate = node.merge(nodeEnter);
 
-        // Bring focus node to front
         nodeUpdate.each(function (d) {
-            if (d.id === currentFocusId) d3.select(this).raise();
+            if (d.id === (focusId || currentFocusId)) d3.select(this).raise();
         });
 
         nodeUpdate.transition(t)
             .style("opacity", 1)
+            .attr("width", cardW)
+            .attr("height", cardH)
             .attr("x", d => d.x - cardW / 2)
             .attr("y", d => d.y - cardH / 2);
 
-        // ─── AUTO-ALIGN & CENTER VIEW ────────────────────────
-        const focusNodeLayout = visibleNodes.find(n => n.id === currentFocusId);
-        const isMobile = width < 768;
-        const initialScale = isMobile ? 0.5 : 0.8;
-
-        // Add a vertical offset to account for the "LINEAGE EXPLORER" overlay at the top:
-        // More offset for desktop to clear the top overlays, less for mobile.
-        const verticalOffset = isMobile ? 20 : 80;
-
-        // Calculate translation needed to place focus node exactly in the middle
+        // ─── VIEWPORT FOCUS ──────────────────────────────────
+        const focusNodeLayout = visibleNodes.find(n => n.id === (focusId || currentFocusId));
+        const initialScale = isMobile ? 0.45 : 0.75;
         const tx = focusNodeLayout ? (width / 2) - (focusNodeLayout.x * initialScale) : width / 2;
-        const ty = focusNodeLayout ? (height / 2) - (focusNodeLayout.y * initialScale) + verticalOffset : height / 2;
+        const ty = focusNodeLayout ? (height / 2) - (focusNodeLayout.y * initialScale) : height / 2;
 
         if (zoomRef.current) {
             svg.transition(t).call(
@@ -309,208 +234,102 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
 
     }, [data, focusId, dimensions]);
 
-    return (
-        <div ref={containerRef} className="focus-flow-viewport" style={{
-            width: '100%',
-            height: dimensions.height,
-            background: 'var(--background)',
-            overflow: 'hidden',
-            position: 'relative',
-            cursor: 'grab'
-        }}>
-            <svg ref={svgRef} width="100%" height="100%" style={{ touchAction: 'none' }}></svg>
+    const handleZoom = (delta) => {
+        if (!svgRef.current || !zoomRef.current) return;
+        const svg = d3.select(svgRef.current);
+        svg.transition().duration(300).call(zoomRef.current.scaleBy, delta);
+    };
 
-            <div className="system-overlay">
-                <div className="scanner-line"></div>
-                <div className="status-bar">
-                    <div className="pulse"></div>
-                    <span>WATU.NETWORK // ARCHIVE_MODE // SYNC: 100%</span>
-                </div>
+    return (
+        <div ref={containerRef} className="tree-container">
+            <svg ref={svgRef} className="tree-svg"></svg>
+
+            {/* Minimal Zoom Controls */}
+            <div className="zoom-controls">
+                <button onClick={() => handleZoom(1.3)}>+</button>
+                <button onClick={() => handleZoom(0.7)}>−</button>
             </div>
 
-            <style dangerouslySetInnerHTML={{
-                __html: `
+            <style jsx>{`
+                .tree-container {
+                    width: 100%;
+                    height: ${dimensions.height}px;
+                    background: #0f172a;
+                    position: relative;
+                    overflow: hidden;
+                    touch-action: none;
+                }
+                .tree-svg { width: 100%; height: 100%; cursor: grab; }
+                .tree-svg:active { cursor: grabbing; }
+
                 .person-card {
                     width: 100%;
                     height: 100%;
-                    position: relative;
-                    border-radius: 24px;
-                    overflow: hidden;
-                    cursor: pointer;
-                    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-                    transform-origin: center;
-                    display: flex;
-                    flex-direction: column;
-                    border: 1px solid rgba(255,255,255,0.08);
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-                }
-                .person-card:hover {
-                    border-color: var(--accent);
-                    box-shadow: 0 0 50px rgba(99, 102, 241, 0.4);
-                    transform: scale(1.05) translateY(-15px);
-                }
-                .person-card.active {
-                    border-color: #ef4444;
-                    border-width: 2px;
-                    box-shadow: 0 0 100px rgba(239, 68, 68, 0.6), inset 0 0 30px rgba(239, 68, 68, 0.2);
-                    transform: scale(1.02) translateY(-10px);
-                    z-index: 100;
-                }
-                .person-card.active::before {
-                    content: '';
-                    position: absolute;
-                    inset: -2px;
-                    background: linear-gradient(45deg, #ef4444, transparent, #ef4444);
-                    opacity: 0.3;
-                    z-index: -1;
-                    animation: rotateAura 4s linear infinite;
-                }
-                @keyframes rotateAura {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-                .person-card.deceased {
-                    filter: grayscale(0.8) contrast(1.1) brightness(0.9);
-                }
-                .card-glass {
-                    position: absolute;
-                    inset: 0;
-                    background: var(--card);
-                    border: 1px solid var(--border);
-                    backdrop-filter: blur(16px);
-                    z-index: 0;
-                }
-                .card-content {
-                    position: relative;
-                    z-index: 1;
-                    padding: 28px;
+                    padding: 1rem;
+                    background: rgba(30, 41, 59, 0.7);
+                    backdrop-filter: blur(20px);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 20px;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    height: 100%;
+                    text-align: center;
+                    transition: all 0.3s;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
                 }
+                .person-card:hover { border-color: var(--accent); transform: translateY(-5px); box-shadow: 0 15px 40px rgba(99, 102, 241, 0.2); }
+                .person-card.active { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 30px rgba(99, 102, 241, 0.3); }
+                .person-card.deceased { filter: grayscale(1) opacity(0.7); }
+
                 .avatar-container {
-                    width: 140px;
-                    height: 170px;
-                    background: rgba(0,0,0,0.3);
-                    border-radius: 16px;
-                    margin-bottom: 24px;
+                    width: 100%;
+                    aspect-ratio: 1;
+                    max-width: 120px;
+                    background: rgba(0,0,0,0.2);
+                    border-radius: 12px;
+                    margin-bottom: 1rem;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    position: relative;
-                    border: 1px solid rgba(255,255,255,0.1);
                     overflow: hidden;
-                    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
                 }
                 .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-                .avatar-fallback { font-size: 80px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2)); }
-                .avatar-container::after {
-                    content: '';
-                    position: absolute;
-                    top: -100%;
-                    left: 0;
-                    width: 100%;
-                    height: 50%;
-                    background: linear-gradient(to bottom, transparent, rgba(239, 68, 68, 0.1), transparent);
-                    animation: scanAvatar 4s linear infinite;
-                    pointer-events: none;
-                }
-                @keyframes scanAvatar { 0% { top: -100%; } 100% { top: 200%; } }
-                
-                .focus-pulse {
-                    position: absolute;
-                    inset: -12px;
-                    border: 2px solid #ef4444;
-                    border-radius: 24px;
-                    animation: pulseRed 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-                }
-                @keyframes pulseRed {
-                    0% { opacity: 0.8; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-                    70% { opacity: 0.3; transform: scale(1.1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
-                    100% { opacity: 0; transform: scale(1.2); }
-                }
+                .avatar-fallback { font-size: 3rem; }
 
-                .card-info { text-align: center; width: 100%; }
-                .tag-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; font-family: 'Outfit', sans-serif; }
-                .tribe-tag { font-size: 10px; font-weight: 800; color: #fff; padding: 5px 12px; border-radius: 6px; letter-spacing: 0.05em; transition: all 0.3s; }
-                .tribe-tag.gen-ancestor { background: linear-gradient(135deg, #b45309, #d97706); box-shadow: 0 0 15px rgba(217, 119, 6, 0.3); }
-                .tribe-tag.gen-active { background: var(--accent); }
-                .tribe-tag.gen-descendant { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
-                
-                .status-tag { font-size: 10px; font-weight: 800; color: var(--text-secondary); background: var(--accent-muted); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); }
-                
-                .name { font-size: 22px; color: var(--foreground); font-weight: 800; margin: 0; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.02em; }
-                .surname { font-size: 14px; color: var(--accent); font-weight: 700; margin: 6px 0 16px 0; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; }
-                
-                .focus-btn {
-                    width: 100%;
-                    padding: 10px;
-                    background: var(--accent-muted);
-                    border: 1px solid var(--border);
-                    color: var(--accent);
-                    border-radius: 8px;
-                    font-size: 11px;
-                    font-weight: 800;
-                    letter-spacing: 0.05em;
-                    transition: all 0.3s;
-                    margin-bottom: 4px;
-                }
-                .focus-btn:hover {
-                    background: var(--accent);
-                    color: #fff;
-                    box-shadow: var(--shadow-glow);
-                }
+                .rel-label { font-size: 0.6rem; font-weight: 900; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
+                .name { font-size: 1.1rem; font-weight: 800; color: white; margin: 0; line-height: 1.2; }
+                .surname { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-top: 2px; text-transform: uppercase; }
 
-                .focus-indicator {
+                .zoom-controls {
+                    position: absolute;
+                    bottom: 2rem;
+                    right: 2rem;
                     display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 6px;
-                    font-size: 11px;
-                    font-weight: 800;
-                    color: #ef4444;
-                    letter-spacing: 0.1em;
-                    margin: 12px 0;
+                    flex-direction: column;
+                    gap: 10px;
+                    z-index: 50;
                 }
-                .pulse-dot {
-                    width: 6px;
-                    height: 6px;
-                    background: #ef4444;
-                    border-radius: 50%;
-                    box-shadow: 0 0 10px #ef4444;
-                    animation: glowRed 1s infinite;
+                .zoom-controls button {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 12px;
+                    background: rgba(30, 41, 59, 0.8);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    color: white;
+                    font-size: 1.25rem;
+                    cursor: pointer;
+                    backdrop-filter: blur(10px);
+                    transition: all 0.2s;
                 }
-                @keyframes glowRed { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.5); } }
+                .zoom-controls button:hover { background: var(--accent); border-color: var(--accent); }
 
-                .meta-data { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); font-weight: 700; border-top: 1px solid var(--border); padding-top: 16px; margin-top: auto; }
-                
-                .card-accents .corner { position: absolute; width: 15px; height: 15px; border: 2px solid var(--accent); opacity: 0; transition: all 0.4s ease; }
-                .person-card:hover .corner { opacity: 0.8; width: 20px; height: 20px; }
-                .corner.tl { top: 12px; left: 12px; border-right: none; border-bottom: none; }
-                .corner.tr { top: 12px; right: 12px; border-left: none; border-bottom: none; }
-                .corner.bl { bottom: 12px; left: 12px; border-right: none; border-top: none; }
-                .corner.br { bottom: 12px; right: 12px; border-left: none; border-top: none; }
-
-
-                .system-overlay { position: absolute; inset: 0; pointer-events: none; }
-                .status-bar { position: absolute; top: 30px; left: 30px; display: flex; alignItems: center; gap: 12px; font-size: 11px; color: var(--text-secondary); font-weight: 800; letter-spacing: 0.1em; }
-                .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: glowAnim 1.5s infinite; }
-                @keyframes glowAnim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-                
-                .scanner-line {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 2px;
-                    background: linear-gradient(to right, transparent, var(--accent), transparent);
-                    opacity: 0.1;
-                    animation: scan 6s linear infinite;
+                @media (max-width: 768px) {
+                    .zoom-controls { bottom: 1.5rem; right: 1.5rem; }
+                    .zoom-controls button { width: 40px; height: 40px; }
+                    .name { font-size: 1rem; }
+                    .person-card { padding: 0.75rem; }
                 }
-                @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-            `}} />
+            `}</style>
         </div>
     );
 }
-

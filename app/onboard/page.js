@@ -148,6 +148,25 @@ export default function OnboardPage() {
                                 </div>
                             </div>
                             <div className="input-group">
+                                <label>MOBILE IDENTITY</label>
+                                <div className="phone-wrapper">
+                                    <div className="country-selector">
+                                        <select name="phoneCode" value={formData.phoneCode} onChange={handleChange}>
+                                            {COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.code} {c.flag}</option>)}
+                                        </select>
+                                        <div className="selector-icon">▾</div>
+                                    </div>
+                                    <input
+                                        name="phoneNumber"
+                                        type="tel"
+                                        placeholder="7XX XXX XXX"
+                                        value={formData.phoneNumber}
+                                        onChange={(e) => setFormData(p => ({ ...p, phoneNumber: e.target.value.replace(/\D/g, '') }))}
+                                        className="main-input"
+                                    />
+                                </div>
+                            </div>
+                            <div className="input-group">
                                 <label>EMAIL ADDRESS (REQUIRED FOR RECOVERY)</label>
                                 <input name="email" value={formData.email} onChange={handleChange} placeholder="CONTACT@WATU.NETWORK" />
                             </div>
@@ -261,7 +280,7 @@ export default function OnboardPage() {
                 .input-group { margin-bottom: 1.5rem; }
                 .input-group label { display: block; font-size: 0.65rem; font-weight: 900; color: var(--text-secondary); margin-bottom: 0.75rem; letter-spacing: 0.05em; }
                 
-                input, select {
+                input, select, .main-input {
                     width: 100%;
                     background: rgba(255,255,255,0.03);
                     border: 1px solid rgba(255,255,255,0.1);
@@ -272,7 +291,30 @@ export default function OnboardPage() {
                     outline: none;
                     transition: all 0.2s;
                 }
-                input:focus, select:focus { border-color: var(--accent); background: rgba(255,255,255,0.05); }
+                input:focus, select:focus, .main-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.05); }
+
+                .phone-wrapper { display: flex; gap: 12px; }
+                .country-selector {
+                    position: relative;
+                    width: 140px;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 16px;
+                    overflow: hidden;
+                }
+                .country-selector select {
+                    width: 100%;
+                    height: 100%;
+                    padding: 0 32px 0 16px;
+                    background: transparent;
+                    border: none;
+                    color: white;
+                    font-size: 1rem;
+                    appearance: none;
+                    cursor: pointer;
+                }
+                .selector-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; }
+                .main-input { flex: 1; }
 
                 .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
                 
