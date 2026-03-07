@@ -1,6 +1,6 @@
 import { executeQuery } from '@/lib/neo4j';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "../../auth/[...nextauth]/route";
 
 export async function GET() {
     const session = await getServerSession(authOptions);
