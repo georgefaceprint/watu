@@ -61,7 +61,7 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 .attr("cx", 2)
                 .attr("cy", 2)
                 .attr("r", 1)
-                .attr("fill", "rgba(129, 140, 248, 0.1)");
+                .attr("fill", "var(--border)");
 
             svg.append("rect")
                 .attr("width", "100%")
@@ -184,8 +184,9 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         const linkEnter = link.enter().append("path")
             .attr("class", "link")
             .attr("fill", "none")
-            .attr("stroke", "rgba(129, 140, 248, 0.2)")
+            .attr("stroke", "var(--accent)")
             .attr("stroke-width", 2)
+            .style("opacity", 0.15)
             .style("stroke-dasharray", d => d.type === 'SPOUSE_OF' ? "5,5" : "none")
             .style("opacity", 0);
 
@@ -253,10 +254,17 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
             .attr("x", d => d.x - cardW / 2)
             .attr("y", d => d.y - cardH / 2);
 
-        // Center View
+        // ─── AUTO-ALIGN & CENTER VIEW ────────────────────────
+        const focusNodeLayout = visibleNodes.find(n => n.id === currentFocusId);
+        const initialScale = width < 768 ? 0.45 : 0.7; // Tighter fit for mobile
+
+        // Calculate translation to put focus node in center
+        const tx = focusNodeLayout ? (width / 2) - (focusNodeLayout.x * initialScale) : width / 2;
+        const ty = focusNodeLayout ? (height / 2) - (focusNodeLayout.y * initialScale) : height / 2;
+
         svg.transition(t).call(
             d3.zoom().transform,
-            d3.zoomIdentity.translate(width / 2, height / 2).scale(0.7)
+            d3.zoomIdentity.translate(tx, ty).scale(initialScale)
         );
 
     }, [data, focusId, dimensions]);
@@ -265,7 +273,7 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         <div ref={containerRef} className="focus-flow-viewport" style={{
             width: '100%',
             height: dimensions.height,
-            background: 'radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%)',
+            background: 'var(--background)',
             overflow: 'hidden',
             position: 'relative',
             cursor: 'grab'
@@ -312,7 +320,8 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 .card-glass {
                     position: absolute;
                     inset: 0;
-                    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+                    background: var(--card);
+                    border: 1px solid var(--border);
                     backdrop-filter: blur(16px);
                     z-index: 0;
                 }
@@ -340,7 +349,7 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                     box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
                 }
                 .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-                .avatar-fallback { font-size: 80px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.8)); }
+                .avatar-fallback { font-size: 80px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2)); }
                 
                 .focus-pulse {
                     position: absolute;
@@ -361,12 +370,12 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 .tribe-tag.gen-active { background: var(--accent); }
                 .tribe-tag.gen-descendant { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
                 
-                .status-tag { font-size: 10px; font-weight: 800; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); }
+                .status-tag { font-size: 10px; font-weight: 800; color: var(--text-secondary); background: var(--accent-muted); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); }
                 
-                .name { font-size: 22px; color: #fff; font-weight: 800; margin: 0; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.02em; }
+                .name { font-size: 22px; color: var(--foreground); font-weight: 800; margin: 0; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.02em; }
                 .surname { font-size: 14px; color: var(--accent); font-weight: 700; margin: 6px 0 20px 0; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; }
                 
-                .meta-data { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; font-weight: 700; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; margin-top: auto; }
+                .meta-data { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); font-weight: 700; border-top: 1px solid var(--border); padding-top: 16px; margin-top: auto; }
                 
                 .card-accents .corner { position: absolute; width: 15px; height: 15px; border: 2px solid var(--accent); opacity: 0; transition: all 0.4s ease; }
                 .person-card:hover .corner { opacity: 0.8; width: 20px; height: 20px; }
@@ -377,7 +386,7 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
 
 
                 .system-overlay { position: absolute; inset: 0; pointer-events: none; }
-                .status-bar { position: absolute; top: 30px; left: 30px; display: flex; alignItems: center; gap: 12px; font-size: 11px; color: #64748b; font-weight: 800; letter-spacing: 0.1em; }
+                .status-bar { position: absolute; top: 30px; left: 30px; display: flex; alignItems: center; gap: 12px; font-size: 11px; color: var(--text-secondary); font-weight: 800; letter-spacing: 0.1em; }
                 .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: glowAnim 1.5s infinite; }
                 @keyframes glowAnim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
                 
