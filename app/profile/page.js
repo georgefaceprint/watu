@@ -52,6 +52,14 @@ export default function ProfilePage() {
         'Last Born', 'Only Child'
     ];
 
+    const securityQuestions = [
+        'What was the name of your first pet?',
+        'In what city were you born?',
+        'What is your mother\'s maiden name?',
+        'What was the name of your first school?',
+        'What is your favorite ancestral dish?'
+    ];
+
     useEffect(() => {
         if (status === 'unauthenticated') {
             router.push('/login');
@@ -94,11 +102,31 @@ export default function ProfilePage() {
     const handlePhotoChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Compress image using canvas to avoid massive JSON payloads
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setProfilePic(reader.result);
-                // Update profile state to include the base64 for submission
-                setProfile(prev => ({ ...prev, photo: reader.result }));
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; // Profile pics don't need to be huge
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    setProfilePic(compressedBase64);
+                    setProfile(prev => ({ ...prev, photo: compressedBase64 }));
+                };
+                img.src = event.target.result;
             };
             reader.readAsDataURL(file);
         }
@@ -244,26 +272,14 @@ export default function ProfilePage() {
                         {/* Section 3: Vault Security & Contact */}
                         <div className="glass-card form-section shadow-lg mt-6">
                             <h2 className="section-title"><span className="icon">🔒</span> VAULT SECURITY</h2>
-                            <div className="input-group">
-                                <label>Security Recovery Question</label>
-                                <input name="securityQuestion" value={profile.securityQuestion} onChange={handleChange} className="bold-input" placeholder="e.g. YOUR FIRST PET'S NAME?" />
-                            </div>
 
-                            <div className="form-grid mt-4">
+                            <div className="form-grid">
                                 <div className="input-group">
-                                    <label>Contact Number</label>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <select
-                                            name="phoneCode"
-                                            value={profile.phoneCode || '+254'}
-                                            onChange={handleChange}
-                                            className="bold-input"
-                                            style={{ width: '100px' }}
-                                        >
-                                            {countryCodes.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
-                                        </select>
-                                        <input name="phoneNumber" value={profile.phoneNumber} onChange={handleChange} className="bold-input" style={{ flex: 1 }} placeholder="7XX XXX XXX" />
-                                    </div>
+                                    <label>Security Recovery Question</label>
+                                    <select name="securityQuestion" value={profile.securityQuestion} onChange={handleChange} className="bold-input">
+                                        <option value="">SELECT A QUESTION</option>
+                                        {securityQuestions.map(q => <option key={q} value={q}>{q.toUpperCase()}</option>)}
+                                    </select>
                                 </div>
                                 <div className="input-group">
                                     <label>Ancestral Profession</label>
