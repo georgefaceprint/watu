@@ -1,6 +1,7 @@
 import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
 import PWAInstaller from '../components/PWAInstaller';
+import ThemeSwitcher from '../components/ThemeSwitcher';
 import AuthProvider from '../components/AuthProvider';
 import SignOutButton from '../components/SignOutButton';
 import ProfileCompletion from './components/ProfileCompletion';
@@ -67,6 +68,8 @@ export default function RootLayout({ children }) {
                                 fontSize: '18px'
                             }}>W</div>
                             <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--foreground)', letterSpacing: '-0.02em' }}>Watu<span style={{ color: 'var(--accent)' }}>.Network</span></h2>
+
+                            <ThemeSwitcher />
                         </div>
 
                         <div className="desktop-only" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>

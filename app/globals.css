@@ -1,7 +1,7 @@
 :root {
-  /* Graceful Blue and Pink Theme (Light) */
-  --background: #fdfafb;
-  --foreground: #1e293b;
+  /* Default: THEME 1 - HERITAGE ROYAL (Indigo & Rose) */
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --accent: #6366f1;
   --accent-secondary: #f472b6;
   --accent-muted: rgba(99, 102, 241, 0.08);
@@ -9,32 +9,62 @@
   --card: #ffffff;
   --card-hover: #fdf2f8;
   --text-secondary: #64748b;
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.5);
-
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.4);
   --font-serif: var(--font-outfit), 'Outfit', sans-serif;
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
   --radius-lg: 24px;
   --radius-md: 16px;
   --radius-sm: 8px;
-  --shadow-glow: 0 10px 25px -5px rgba(99, 102, 241, 0.25);
+  --shadow-glow: 0 10px 25px -5px rgba(99, 102, 241, 0.2);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f1f5f9;
-    --accent: #818cf8;
-    --accent-secondary: #fb7185;
-    --accent-muted: rgba(129, 140, 248, 0.15);
-    --border: rgba(255, 255, 255, 0.1);
-    --card: #1e293b;
-    --card-hover: #334155;
-    --text-secondary: #94a3b8;
-    --glass-bg: rgba(15, 23, 42, 0.6);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --shadow-glow: 0 0 20px rgba(129, 140, 248, 0.2);
-  }
+[data-theme="sahara"] {
+  /* THEME 2 - SAHARA EARTH (Amber & Ochre) */
+  --background: #fffcf5;
+  --foreground: #451a03;
+  --accent: #d97706;
+  --accent-secondary: #92400e;
+  --accent-muted: rgba(217, 119, 6, 0.08);
+  --border: rgba(69, 26, 3, 0.08);
+  --card: #ffffff;
+  --card-hover: #fef3c7;
+  --text-secondary: #92400e;
+  --glass-bg: rgba(255, 252, 245, 0.7);
+  --glass-border: rgba(217, 119, 6, 0.1);
+  --shadow-glow: 0 10px 25px -5px rgba(217, 119, 6, 0.2);
+}
+
+[data-theme="coastal"] {
+  /* THEME 3 - COASTAL BREEZE (Teal & Azure) */
+  --background: #f0f9ff;
+  --foreground: #083344;
+  --accent: #0ea5e9;
+  --accent-secondary: #0d9488;
+  --accent-muted: rgba(14, 165, 233, 0.08);
+  --border: rgba(8, 51, 68, 0.08);
+  --card: #ffffff;
+  --card-hover: #ccfbf1;
+  --text-secondary: #155e75;
+  --glass-bg: rgba(240, 249, 255, 0.7);
+  --glass-border: rgba(14, 165, 233, 0.1);
+  --shadow-glow: 0 10px 25px -5px rgba(14, 165, 233, 0.2);
+}
+
+[data-theme="modern"] {
+  /* THEME 4 - MODERN MINIMAL (Slate & Emerald) */
+  --background: #ffffff;
+  --foreground: #1e293b;
+  --accent: #10b981;
+  --accent-secondary: #0f172a;
+  --accent-muted: rgba(16, 185, 129, 0.08);
+  --border: rgba(30, 41, 59, 0.1);
+  --card: #f8fafc;
+  --card-hover: #f1f5f9;
+  --text-secondary: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(16, 185, 129, 0.1);
+  --shadow-glow: 0 10px 25px -5px rgba(16, 185, 129, 0.15);
 }
 
 * {
