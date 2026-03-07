@@ -105,14 +105,18 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
 
                 if (l.source === id) {
                     neighborId = l.target;
-                    if (l.type === 'CHILD_OF') nextGen = gen - 1; // Parent
-                    else if (l.type === 'PARENT_OF') nextGen = gen + 1; // Child
-                    else nextGen = gen; // Sibling/Spouse
+                    if (l.type === 'CHILD_OF') nextGen = gen - 1;
+                    else if (l.type === 'PARENT_OF') nextGen = gen + 1;
+                    else if (l.type === 'GRANDPARENT_OF') nextGen = gen + 2;
+                    else if (l.type === 'GRANDCHILD_OF') nextGen = gen - 2;
+                    else nextGen = gen; // Sibling/Spouse/Cousin
                 } else if (l.target === id) {
                     neighborId = l.source;
-                    if (l.type === 'CHILD_OF') nextGen = gen + 1; // Child
-                    else if (l.type === 'PARENT_OF') nextGen = gen - 1; // Parent
-                    else nextGen = gen; // Sibling/Spouse
+                    if (l.type === 'CHILD_OF') nextGen = gen + 1;
+                    else if (l.type === 'PARENT_OF') nextGen = gen - 1;
+                    else if (l.type === 'GRANDPARENT_OF') nextGen = gen - 2;
+                    else if (l.type === 'GRANDCHILD_OF') nextGen = gen + 2;
+                    else nextGen = gen; // Sibling/Spouse/Cousin
                 }
 
                 if (neighborId && !visited.has(neighborId)) {
@@ -124,12 +128,34 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         }
 
         const levels = {};
+        const visibleLinks = links.filter(l => nodeMap.get(l.source)?.level !== 99 && nodeMap.get(l.target)?.level !== 99);
+
         nodes.forEach(n => {
             const gen = nodeGenMap[n.id];
             if (gen !== undefined) {
                 n.level = gen;
                 if (!levels[gen]) levels[gen] = [];
                 levels[gen].push(n);
+
+                // Add Descriptive Label based on Sex and Level
+                const isFemale = n.sex?.toLowerCase() === 'female' || n.maidenName;
+                if (gen === 0) {
+                    if (n.id === currentFocusId) n.relLabel = 'ARCHIVE FOCUS';
+                    else {
+                        // Check if they are a Sibling or Spouse of focus
+                        const linkToFocus = visibleLinks.find(l => (l.source === currentFocusId && l.target === n.id) || (l.target === currentFocusId && l.source === n.id));
+                        if (linkToFocus?.type === 'SPOUSE_OF') n.relLabel = isFemale ? 'WIFE' : 'HUSBAND';
+                        else if (linkToFocus?.type === 'SIBLING_OF') n.relLabel = isFemale ? 'SISTER' : 'BROTHER';
+                        else if (linkToFocus?.type === 'COUSIN_OF') n.relLabel = 'COUSIN';
+                        else n.relLabel = 'CLAN KIN';
+                    }
+                } else if (gen === -1) n.relLabel = isFemale ? 'MOTHER' : 'FATHER';
+                else if (gen === -2) n.relLabel = isFemale ? 'GRANDMOTHER' : 'GRANDFATHER';
+                else if (gen === -3) n.relLabel = isFemale ? 'GREAT GRANDMOTHER' : 'GREAT GRANDFATHER';
+                else if (gen < -3) n.relLabel = `L${Math.abs(gen)} ANCESTOR`;
+                else if (gen === 1) n.relLabel = isFemale ? 'DAUGHTER' : 'SON';
+                else if (gen === 2) n.relLabel = isFemale ? 'GRANDDAUGHTER' : 'GRANDSON';
+                else if (gen > 2) n.relLabel = `L${gen} DESCENDANT`;
             } else {
                 n.level = 99; // Orphaned from focus
             }
@@ -147,11 +173,9 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         });
 
         const visibleNodes = nodes.filter(n => n.level !== 99);
-        const visibleLinks = links.filter(l => nodeMap.get(l.source)?.level !== 99 && nodeMap.get(l.target)?.level !== 99);
-
         const t = d3.transition().duration(1000).ease(d3.easeCubicInOut);
 
-        // ─── RENDER LINKS ────────────────────────────────────
+        // Links
         const link = g.selectAll(".link")
             .data(visibleLinks, d => `${d.source}-${d.target}`);
 
@@ -204,7 +228,7 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                     <div class="card-info">
                         <div class="tag-row">
                             <span class="tribe-tag ${d.level < 0 ? 'gen-ancestor' : d.level > 0 ? 'gen-descendant' : 'gen-active'}">${d.tribe || 'WATU'}</span>
-                            ${d.level < 0 ? '<span class="status-tag">L' + Math.abs(d.level) + ' ANCESTOR</span>' : d.level > 0 ? '<span class="status-tag">L' + d.level + ' OFFSPRING</span>' : '<span class="status-tag">ARCHIVE FOCUS</span>'}
+                            <span class="status-tag">${d.relLabel || 'RELATIVE'}</span>
                         </div>
                         <h3 class="name">${d.name}</h3>
                         <h4 class="surname">${d.surname}</h4>

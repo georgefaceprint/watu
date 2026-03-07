@@ -15,7 +15,7 @@ export async function GET(request) {
     const query = `
         MATCH (p:Person {id: $personId})
         CALL apoc.path.subgraphAll(p, {
-            relationshipFilter: 'CHILD_OF>|CHILD_OF<|PARENT_OF>|PARENT_OF<|SIBLING_OF|SPOUSE_OF',
+            relationshipFilter: 'CHILD_OF>|CHILD_OF<|PARENT_OF>|PARENT_OF<|SIBLING_OF|SPOUSE_OF|GRANDPARENT_OF|GRANDCHILD_OF|COUSIN_OF',
             minLevel: 0,
             maxLevel: 5
         })

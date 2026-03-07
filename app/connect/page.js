@@ -274,10 +274,13 @@ export default function ConnectPage() {
                                             outline: 'none'
                                         }}
                                     >
-                                        <option value="PARENT_OF">is my Child</option>
-                                        <option value="CHILD_OF">is my Parent</option>
-                                        <option value="SIBLING_OF">is my Sibling</option>
-                                        <option value="SPOUSE_OF">is my Spouse</option>
+                                        <option value="PARENT_OF">is my {person.sex === 'female' ? 'Daughter' : 'Son'}</option>
+                                        <option value="CHILD_OF">is my {person.sex === 'female' ? 'Mother' : 'Father'}</option>
+                                        <option value="SIBLING_OF">is my {person.sex === 'female' ? 'Sister' : 'Brother'}</option>
+                                        <option value="SPOUSE_OF">is my {person.sex === 'female' ? 'Wife' : 'Husband'}</option>
+                                        <option value="GRANDCHILD_OF">is my {person.sex === 'female' ? 'Grandmother' : 'Grandfather'}</option>
+                                        <option value="GRANDPARENT_OF">is my {person.sex === 'female' ? 'Granddaughter' : 'Grandson'}</option>
+                                        <option value="COUSIN_OF">is my Cousin / Kin</option>
                                     </select>
                                     <button
                                         className="btn-primary"
@@ -360,7 +363,10 @@ export default function ConnectPage() {
                                         { label: 'FATHER / MOTHER', val: 'CHILD_OF' },
                                         { label: 'SON / DAUGHTER', val: 'PARENT_OF' },
                                         { label: 'BROTHER / SISTER', val: 'SIBLING_OF' },
-                                        { label: 'HUSBAND / WIFE', val: 'SPOUSE_OF' }
+                                        { label: 'HUSBAND / WIFE', val: 'SPOUSE_OF' },
+                                        { label: 'GRANDPARENT', val: 'GRANDCHILD_OF' },
+                                        { label: 'GRANDCHILD', val: 'GRANDPARENT_OF' },
+                                        { label: 'COUSIN', val: 'COUSIN_OF' }
                                     ].map(rel => (
                                         <button
                                             key={rel.val}

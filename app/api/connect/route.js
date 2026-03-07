@@ -35,7 +35,7 @@ export async function GET(request) {
         }
     }
 
-    query += `RETURN p { .id, .name, .surname, .tribe, .clan, .birthPlace, .isDeceased, .deathYear, .deathMonth } as person LIMIT 10`;
+    query += `RETURN p { .id, .name, .surname, .tribe, .clan, .birthPlace, .sex, .isDeceased, .deathYear, .deathMonth } as person LIMIT 10`;
 
     try {
         const records = await executeQuery(query, params);
@@ -142,7 +142,7 @@ export async function POST(request) {
         }
     }
 
-    const allowedRelationships = ['SIBLING_OF', 'PARENT_OF', 'SPOUSE_OF', 'CHILD_OF'];
+    const allowedRelationships = ['SIBLING_OF', 'PARENT_OF', 'SPOUSE_OF', 'CHILD_OF', 'GRANDPARENT_OF', 'GRANDCHILD_OF', 'COUSIN_OF'];
     if (!allowedRelationships.includes(relationship)) {
         return Response.json({ error: 'Invalid relationship type provided.' }, { status: 400 });
     }
