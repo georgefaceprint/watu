@@ -279,8 +279,8 @@ export default function LoginPage() {
                 .country-selector {
                     position: relative;
                     width: 130px;
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.1);
+                    background: rgba(0, 0, 0, 0.4);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
                     border-radius: 16px;
                     overflow: hidden;
                 }
@@ -290,25 +290,34 @@ export default function LoginPage() {
                     padding: 0 32px 0 16px;
                     background: transparent;
                     border: none;
-                    color: white;
+                    color: #ffffff;
                     font-size: 1rem;
+                    font-weight: 600;
                     appearance: none;
                     cursor: pointer;
+                }
+                .country-selector select option {
+                    background: #0f172a;
+                    color: white;
                 }
                 .selector-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; }
 
                 .main-input {
                     flex: 1;
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.1);
+                    background: rgba(0, 0, 0, 0.4);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
                     border-radius: 16px;
                     padding: 1rem 1.25rem;
-                    color: white;
+                    color: #ffffff;
                     font-size: 1.1rem;
+                    font-weight: 600;
                     outline: none;
                     transition: all 0.2s;
                 }
-                .main-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.05); }
+                .main-input::placeholder {
+                    color: rgba(255, 255, 255, 0.4);
+                }
+                .main-input:focus { border-color: var(--accent); background: rgba(0, 0, 0, 0.6); }
 
                 .btn-primary-cinematic {
                     width: 100%;
@@ -334,10 +343,12 @@ export default function LoginPage() {
                     text-align: center;
                     font-size: 2.5rem;
                     letter-spacing: 0.5em;
-                    color: white;
+                    color: #ffffff;
+                    font-weight: 900;
                     outline: none;
                     padding: 1rem 0;
                 }
+                .otp-input::placeholder { color: rgba(255, 255, 255, 0.2); }
                 .hint { font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin-top: 1rem; }
                 .dev-otp { margin-top: 1rem; padding: 0.5rem; background: rgba(99,102,241,0.1); border-radius: 8px; font-size: 0.75rem; color: var(--accent); text-align: center; font-weight: bold; border: 1px dashed var(--accent); }
 

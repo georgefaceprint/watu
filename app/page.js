@@ -184,23 +184,24 @@ export default function HomePage() {
 
             {/* Mobile Bottom Nav Spacer */}
             <div style={{ height: '20px' }} />
+
+            <style jsx>{`
+                .search-input {
+                    background: var(--card);
+                    border: 1px solid var(--border);
+                    color: var(--foreground);
+                    padding: 0.85rem 1rem;
+                    border-radius: 12px;
+                    font-size: 0.9rem;
+                    outline: none;
+                    transition: all 0.2s;
+                }
+                .search-input:focus {
+                    border-color: var(--accent);
+                    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+                }
+            `}</style>
         </div>
     );
 }
 
-const styles = `
-.search-input {
-    background: var(--card);
-    border: 1px solid var(--border);
-    color: var(--foreground);
-    padding: 0.85rem 1rem;
-    border-radius: 12px;
-    font-size: 0.9rem;
-    outline: none;
-    transition: all 0.2s;
-}
-.search-input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-}
-`;
