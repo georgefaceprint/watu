@@ -145,11 +145,11 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 if (gen === 0) {
                     if (n.id === currentFocusId) n.relLabel = 'ARCHIVE FOCUS';
                     else {
-                        // Check if they are a Sibling or Spouse of focus
                         const linkToFocus = visibleLinks.find(l => (l.source === currentFocusId && l.target === n.id) || (l.target === currentFocusId && l.source === n.id));
                         if (linkToFocus?.type === 'SPOUSE_OF') n.relLabel = isFemale ? 'WIFE' : 'HUSBAND';
                         else if (linkToFocus?.type === 'SIBLING_OF') n.relLabel = isFemale ? 'SISTER' : 'BROTHER';
                         else if (linkToFocus?.type === 'COUSIN_OF') n.relLabel = 'COUSIN';
+                        else if (n.level === 0) n.relLabel = isFemale ? 'SISTER' : 'BROTHER'; // Fallback for sibling logic in BFS
                         else n.relLabel = 'CLAN KIN';
                     }
                 } else if (gen === -1) n.relLabel = isFemale ? 'MOTHER' : 'FATHER';
@@ -330,9 +330,9 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                     transform: scale(1.05) translateY(-15px);
                 }
                 .person-card.active {
-                    border-color: var(--accent);
+                    border-color: #ef4444;
                     border-width: 3px;
-                    box-shadow: 0 0 80px var(--shadow-glow);
+                    box-shadow: 0 0 80px rgba(239, 68, 68, 0.5);
                     transform: scale(1.02);
                 }
                 .person-card.deceased {
@@ -375,11 +375,11 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 .focus-pulse {
                     position: absolute;
                     inset: -8px;
-                    border: 2px solid var(--accent);
+                    border: 2px solid #ef4444;
                     border-radius: 20px;
-                    animation: pulseFrame 2s infinite;
+                    animation: pulseRed 2s infinite;
                 }
-                @keyframes pulseFrame {
+                @keyframes pulseRed {
                     0% { opacity: 0.8; transform: scale(1); }
                     100% { opacity: 0; transform: scale(1.15); }
                 }
@@ -422,19 +422,19 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                     gap: 6px;
                     font-size: 11px;
                     font-weight: 800;
-                    color: var(--accent);
+                    color: #ef4444;
                     letter-spacing: 0.1em;
                     margin: 12px 0;
                 }
                 .pulse-dot {
                     width: 6px;
                     height: 6px;
-                    background: var(--accent);
+                    background: #ef4444;
                     border-radius: 50%;
-                    box-shadow: 0 0 10px var(--accent);
-                    animation: glow1 1s infinite;
+                    box-shadow: 0 0 10px #ef4444;
+                    animation: glowRed 1s infinite;
                 }
-                @keyframes glow1 { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+                @keyframes glowRed { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.5); } }
 
                 .meta-data { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); font-weight: 700; border-top: 1px solid var(--border); padding-top: 16px; margin-top: auto; }
                 
