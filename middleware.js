@@ -16,11 +16,8 @@ export default withAuth(
 
 export const config = {
     matcher: [
-        "/profile/:path*",
-        "/connect/:path*",
-        "/chat/:path*",
         "/admin/:path*",
-        // Protect sensitive APIs
+        // Protect sensitive APIs server-side only
         "/api/profile/:path*",
         "/api/connect/:path*",
         "/api/admin/:path*",
