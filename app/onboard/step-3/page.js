@@ -19,6 +19,10 @@ export default function Step3Page() {
             alert("RECOVERY QUESTION REQUIRED");
             return;
         }
+        if (!formData.birthYear || formData.birthYear.length !== 4) {
+            alert("ENTER A VALID 4-DIGIT BIRTH YEAR");
+            return;
+        }
         setLoading(true);
         try {
             const res = await fetch('/api/onboard', {
@@ -55,6 +59,19 @@ export default function Step3Page() {
                         <option value="">SELECT A QUESTION</option>
                         {securityQuestions.map(q => <option key={q} value={q}>{q.toUpperCase()}</option>)}
                     </select>
+                </div>
+
+                <div className="field-item">
+                    <label>YEAR OF BIRTH</label>
+                    <input
+                        className="luminous-input"
+                        type="number"
+                        min="1900"
+                        max={new Date().getFullYear()}
+                        placeholder="e.g. 1985"
+                        value={formData.birthYear || ''}
+                        onChange={(e) => updateFormData({ birthYear: e.target.value })}
+                    />
                 </div>
 
                 <div className="field-item">
