@@ -11,13 +11,27 @@ export default function ChatPage() {
     const scrollRef = useRef(null);
     const socketRef = useRef(null);
 
-    const [groups, setGroups] = useState([
-        { id: 1, name: 'Sifuna Clan Global', type: 'CLAN', members: 45, lastMessage: 'Nelson: We need to update the heritage records for March.', time: '10:24 AM', unread: 3 },
-        { id: 2, name: 'Nairobi Branch Cousins', type: 'PRIVATE', members: 12, lastMessage: 'Sarah: Who is bringing the photos?', time: 'Yesterday', unread: 0 },
-        { id: 3, name: 'Moyo Family Legacy', type: 'CLAN', members: 89, lastMessage: 'Bheki: The funeral plan is now active.', time: '2 days ago', unread: 0 },
-    ]);
-
+    const [groups, setGroups] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [messages, setMessages] = useState([]);
+
+    useEffect(() => {
+        const fetchGroups = async () => {
+            try {
+                const res = await fetch('/api/user/groups');
+                const data = await res.json();
+                if (!data.error) {
+                    setGroups(data);
+                    if (data.length > 0 && window.innerWidth >= 768) setSelectedId(data[0].id);
+                }
+            } catch (err) {
+                console.error("Failed to load clan groups", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchGroups();
+    }, []);
 
     useEffect(() => {
         // Initialize socket connection

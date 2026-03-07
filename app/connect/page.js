@@ -9,25 +9,28 @@ export default function ConnectPage() {
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [myId, setMyId] = useState('');
+    const [socket, setSocket] = useState(null);
     const [manualForm, setManualForm] = useState({
-        name: '',
-        surname: '',
-        thirdName: '',
-        fourthName: '',
-        sex: '',
-        maidenName: '',
-        relationship: 'CHILD_OF',
-        isDeceased: false,
-        deathYear: '',
-        deathMonth: ''
+        name: '', surname: '', thirdName: '', fourthName: '',
+        sex: '', maidenName: '', relationship: 'CHILD_OF',
+        isDeceased: false, deathYear: '', deathMonth: ''
     });
-
     const [completeness, setCompleteness] = useState({ percent: 0, missing: [], isComplete: true });
 
     const handleManualChange = (e) => {
         const { name, value, type, checked } = e.target;
         setManualForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
+
+    useEffect(() => {
+        const initSocket = async () => {
+            await fetch('/api/socket');
+            const { io } = await import('socket.io-client');
+            const s = io({ path: '/api/socket' });
+            setSocket(s);
+        };
+        initSocket();
+    }, []);
 
     const handleManualSubmit = async (e) => {
         e.preventDefault();
@@ -59,6 +62,7 @@ export default function ConnectPage() {
             const data = await res.json();
             if (data.success) {
                 alert(`SUCCESS! ${manualForm.name} ADDED TO YOUR TREE (#${data.id})`);
+                if (socket) socket.emit('heritage-update', { id: myId.toUpperCase(), relativeId: data.id });
                 setManualForm({
                     name: '', surname: '', thirdName: '', fourthName: '',
                     sex: '', maidenName: '', relationship: 'CHILD_OF',
@@ -132,6 +136,7 @@ export default function ConnectPage() {
             const data = await res.json();
             if (data.success) {
                 alert(`Connected! Trees are automatically updated.`);
+                if (socket) socket.emit('heritage-update', { id: myId.toUpperCase(), relativeId });
             } else {
                 alert(data.error);
             }

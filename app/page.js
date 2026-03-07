@@ -34,14 +34,33 @@ export default function HomePage() {
     };
 
     useEffect(() => {
+        let socket;
+        const initSocket = async () => {
+            await fetch('/api/socket');
+            const { io } = await import('socket.io-client');
+            socket = io({ path: '/api/socket' });
+
+            socket.on('heritage-update', (data) => {
+                // If the update involves the person we are looking at, or one of their relatives
+                // For simplicity, we refresh if any update happens while on this screen
+                console.log("⚡ Real-time Heritage Update Received", data);
+                if (searchId) fetchTree(searchId);
+            });
+        };
+        initSocket();
+        return () => { if (socket) socket.disconnect(); };
+    }, [searchId]);
+
+    useEffect(() => {
         if (session?.user?.watuId) {
             console.log("🌳 Tree Session Active ID:", session.user.watuId);
             setSearchId(session.user.watuId);
             fetchTree(session.user.watuId);
         } else {
-            // Fallback to seeded demo user
-            console.log("🌳 Tree Fallback ID: XT4NAS");
-            fetchTree('XT4NAS');
+            const fallbackId = 'XT4NAS';
+            console.log("🌳 Tree Fallback ID:", fallbackId);
+            setSearchId(fallbackId);
+            fetchTree(fallbackId);
         }
     }, [session]);
 
