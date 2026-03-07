@@ -82,14 +82,15 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 .attr("height", "100%")
                 .attr("fill", "url(#grid)");
 
-            gRef.current = svg.append("g").attr("class", "main-group");
+            const gNode = svg.append("g").attr("class", "main-group");
+            gRef.current = gNode.node(); // Store the actual DOM node
 
             const zoom = d3.zoom()
                 .scaleExtent([0.1, 3])
                 .on("zoom", (event) => d3.select(gRef.current).attr("transform", event.transform));
 
             zoomRef.current = zoom;
-            svg.call(zoom).on("dblclick.zoom", null); // Disable double click zoom globally
+            svg.call(zoom).on("dblclick.zoom", null);
         }
 
         const g = d3.select(gRef.current);
@@ -191,6 +192,11 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         recenter();
 
     }, [data, focusId, dimensions, recenter]);
+
+    const handleZoom = (delta) => {
+        if (!svgRef.current || !zoomRef.current) return;
+        d3.select(svgRef.current).transition().duration(400).call(zoomRef.current.scaleBy, delta);
+    };
 
     return (
         <div ref={containerRef} className="viz-viewport">
