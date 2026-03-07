@@ -16,66 +16,65 @@ const COUNTRY_CODES = [
 ];
 
 export default function LoginPage() {
-    const [mode, setMode] = useState('phone'); // 'phone', 'social', 'watuId'
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [step, setStep] = useState(1); // 1: Phone, 2: Access Code
     const router = useRouter();
 
-    // ── Phone Auth ──
     const [phoneCode, setPhoneCode] = useState('+254');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [isExistingUser, setIsExistingUser] = useState(null); // null, true, false
-    const [otp, setOtp] = useState('');
-    const [devOtp, setDevOtp] = useState('');
+    const [isNewUser, setIsNewUser] = useState(false);
+    const [pin, setPin] = useState('');
+    const [confirmPin, setConfirmPin] = useState('');
 
-    // ── Watu ID Auth ──
-    const [id, setId] = useState('');
-    const [password, setPassword] = useState('');
-
-    const handleCheckUser = async () => {
-        if (!phoneNumber) { setError('ENTER MOBILE NUMBER'); return; }
+    const handleCheckPhone = async () => {
+        if (!phoneNumber || phoneNumber.length < 7) {
+            setError('ENTER A VALID MOBILE NUMBER');
+            return;
+        }
         setLoading(true); setError('');
         const fullPhone = phoneCode + phoneNumber.replace(/^0+/, '');
+
         try {
-            // Check if user exists and send OTP if they DON'T have an access code yet
-            // or just verification if they are new.
-            const res = await fetch('/api/auth/phone', {
+            const res = await fetch('/api/auth/phone/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone: fullPhone })
             });
             const data = await res.json();
-            if (data.error) throw new Error(data.error);
-
-            setIsExistingUser(data.exists);
-            if (data.devOtp) setDevOtp(data.devOtp);
-        } catch (err) { setError(err.message); }
-        finally { setLoading(false); }
+            setIsNewUser(!data.exists);
+            setStep(2);
+        } catch (err) {
+            setError('NETWORK ERROR. TRY AGAIN.');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleVerify = async () => {
-        if (!otp || otp.length < 5) { setError('ENTER 5-DIGIT CODE'); return; }
+    const handleAccess = async () => {
+        if (pin.length !== 5) { setError('CODE MUST BE 5 DIGITS'); return; }
+        if (isNewUser && pin !== confirmPin) { setError('CODES DO NOT MATCH'); return; }
+
         setLoading(true); setError('');
         const fullPhone = phoneCode + phoneNumber.replace(/^0+/, '');
+
         try {
-            const res = await signIn('phone', { phone: fullPhone, otp, redirect: false });
+            const res = await signIn('phone', {
+                phone: fullPhone,
+                otp: pin, // We use the same 'otp' field in the provider for the PIN
+                isNew: isNewUser,
+                redirect: false
+            });
+
             if (res?.error) throw new Error(res.error);
 
-            // If new user, they might need to go to onboard
+            // Redirect to home or onboard
             router.push('/');
-        } catch (err) { setError(err.message); }
-        finally { setLoading(false); }
-    };
-
-    const handleWatuLogin = async (e) => {
-        if (e) e.preventDefault();
-        setLoading(true); setError('');
-        try {
-            const res = await signIn('credentials', { id: id.toUpperCase(), password, redirect: false });
-            if (res?.error) throw new Error('INVALID WATU ID OR PASSWORD');
-            router.push('/');
-        } catch (err) { setError(err.message); }
-        finally { setLoading(false); }
+        } catch (err) {
+            setError(err.message.toUpperCase());
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -92,106 +91,76 @@ export default function LoginPage() {
                 </div>
 
                 {error && (
-                    <div className="error-alert">⚠️ {error.toUpperCase()}</div>
+                    <div className="error-alert">⚠️ {error}</div>
                 )}
 
                 <div className="auth-content">
-                    {mode === 'phone' && (
-                        <div className="flow-container">
-                            {isExistingUser === null ? (
-                                <>
-                                    <div className="input-group">
-                                        <label>MOBILE IDENTITY</label>
-                                        <div className="phone-wrapper">
-                                            <div className="country-selector">
-                                                <select value={phoneCode} onChange={(e) => setPhoneCode(e.target.value)}>
-                                                    {COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.code} {c.flag}</option>)}
-                                                </select>
-                                                <div className="selector-icon">▾</div>
-                                            </div>
-                                            <input
-                                                type="tel"
-                                                placeholder="7XX XXX XXX"
-                                                value={phoneNumber}
-                                                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                                                className="main-input"
-                                            />
-                                        </div>
+                    {step === 1 ? (
+                        <div className="flow-container animate-slide-up">
+                            <div className="input-group">
+                                <label>MOBILE IDENTITY</label>
+                                <div className="phone-wrapper">
+                                    <div className="country-selector">
+                                        <select value={phoneCode} onChange={(e) => setPhoneCode(e.target.value)}>
+                                            {COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.code} {c.flag}</option>)}
+                                        </select>
+                                        <div className="selector-icon">▾</div>
                                     </div>
-                                    <button onClick={handleCheckUser} disabled={loading} className="btn-primary-cinematic">
-                                        {loading ? 'CHECKING...' : 'CONTINUE'}
-                                    </button>
-                                </>
-                            ) : (
-                                <div className="otp-flow">
-                                    <div className="input-group">
-                                        <label>{isExistingUser ? 'ENTER YOUR 5-DIGIT ACCESS CODE' : 'VERIFICATION CODE SENT'}</label>
-                                        <div className="otp-input-container">
-                                            <input
-                                                type="password"
-                                                maxLength={5}
-                                                placeholder="•••••"
-                                                value={otp}
-                                                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                                                className="otp-input"
-                                                autoFocus
-                                            />
-                                            {devOtp && <div className="dev-otp">🔐 VERIFICATION CODE: {devOtp}</div>}
-                                        </div>
-                                        <p className="hint">PHONE: {phoneCode} {phoneNumber}</p>
-                                    </div>
-                                    <button onClick={handleVerify} disabled={loading} className="btn-primary-cinematic">
-                                        {loading ? 'VERIFYING...' : 'CONFIRM IDENTITY'}
-                                    </button>
-                                    <button onClick={() => setIsExistingUser(null)} className="btn-link">BACK TO PHONE</button>
+                                    <input
+                                        type="tel"
+                                        placeholder="7XX XXX XXX"
+                                        value={phoneNumber}
+                                        onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                                        className="main-input"
+                                        autoFocus
+                                    />
+                                </div>
+                            </div>
+                            <button onClick={handleCheckPhone} disabled={loading} className="btn-primary-cinematic">
+                                {loading ? 'SCANNING...' : 'CONTINUE'}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flow-container animate-slide-up">
+                            <div className="input-group">
+                                <label>{isNewUser ? 'CHOOSE YOUR 5-DIGIT ACCESS CODE' : 'ENTER YOUR 5-DIGIT ACCESS CODE'}</label>
+                                <input
+                                    type="password"
+                                    maxLength={5}
+                                    placeholder="•••••"
+                                    value={pin}
+                                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                                    className="otp-input"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {isNewUser && (
+                                <div className="input-group animate-fade-in">
+                                    <label>CONFIRM YOUR ACCESS CODE</label>
+                                    <input
+                                        type="password"
+                                        maxLength={5}
+                                        placeholder="•••••"
+                                        value={confirmPin}
+                                        onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                                        className="otp-input"
+                                    />
                                 </div>
                             )}
-                        </div>
-                    )}
 
-                    {mode === 'social' && (
-                        <div className="flow-container animate-fade-in">
-                            <div className="social-grid">
-                                <button onClick={() => signIn('google', { callbackUrl: '/' })} className="btn-social google">
-                                    <img src="https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" alt="Google" />
-                                    <span>GOOGLE</span>
-                                </button>
-                                <button onClick={() => signIn('apple', { callbackUrl: '/' })} className="btn-social apple">
-                                    <svg viewBox="0 0 814 1000"><path fill="currentColor" d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.7 268.8-317.7 99.8 0 183 65.8 245.3 65.8 59.2 0 152-69.1 271.5-69.1zm-17.2-159.1c-49.3 0-121.4-33.2-170.4-82.1-43.1-43.4-82.5-115.3-82.5-187.2 0-9.5.8-19 2.3-27.3h2.3c54.8 0 136.2 37.2 185.6 91.5 44.5 49.7 80.8 120.8 80.8 192.6 0 9.5-1.5 19-2.3 27.3-2.3.3-6.7 1.3-15.8-15z" /></svg>
-                                    <span>APPLE</span>
-                                </button>
-                            </div>
-                            <p className="hint">SINGLE-TAP ANCESTRAL ENTRANCE</p>
-                        </div>
-                    )}
+                            <p className="hint">IDENTITY: {phoneCode} {phoneNumber}</p>
 
-                    {mode === 'watuId' && (
-                        <form onSubmit={handleWatuLogin} className="flow-container animate-fade-in">
-                            <div className="input-group">
-                                <label>WATU ID</label>
-                                <input placeholder="W-XXXX-XXXX" value={id} onChange={(e) => setId(e.target.value)} className="main-input" required />
-                            </div>
-                            <div className="input-group">
-                                <label>PASSWORD</label>
-                                <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="main-input" required />
-                            </div>
-                            <button type="submit" disabled={loading} className="btn-primary-cinematic">
-                                {loading ? 'DECRYPTING...' : 'DECRYPT VAULT ACCESS'}
+                            <button onClick={handleAccess} disabled={loading} className="btn-primary-cinematic">
+                                {loading ? 'AUTHENTICATING...' : isNewUser ? 'SAVE & ENTER' : 'CONFIRM IDENTITY'}
                             </button>
-                        </form>
+                            <button onClick={() => { setStep(1); setPin(''); setConfirmPin(''); }} className="btn-link">CHANGE NUMBER</button>
+                        </div>
                     )}
-                </div>
-
-                <div className="perspective-switcher">
-                    <button onClick={() => { setMode('phone'); setIsExistingUser(null); }} className={mode === 'phone' ? 'active' : ''}>PHONE</button>
-                    <div className="divider"></div>
-                    <button onClick={() => setMode('social')} className={mode === 'social' ? 'active' : ''}>SOCIAL</button>
-                    <div className="divider"></div>
-                    <button onClick={() => setMode('watuId')} className={mode === 'watuId' ? 'active' : ''}>WATU ID</button>
                 </div>
 
                 <div className="auth-footer">
-                    <p>New to the network? <a href="/onboard">CLAIM YOUR IDENTITY →</a></p>
+                    <p>© 2026 WATU.NETWORK | SECURING GLOBAL HERITAGE</p>
                 </div>
             </div>
 
@@ -206,22 +175,21 @@ export default function LoginPage() {
                 }
                 .auth-glass-container {
                     width: 100%;
-                    max-width: 480px;
+                    max-width: 460px;
                     background: rgba(30, 41, 59, 0.85);
                     backdrop-filter: blur(40px);
                     border: 1px solid rgba(255, 255, 255, 0.25);
                     border-radius: 32px;
-                    padding: 3.5rem 2.5rem;
+                    padding: 4rem 2.5rem;
                     box-shadow: 0 0 80px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.2);
                     position: relative;
-                    overflow: hidden;
                 }
-                .auth-header { text-align: center; margin-bottom: 3rem; }
+                .auth-header { text-align: center; margin-bottom: 3.5rem; }
                 .brand-watu { color: #ffffff; }
                 .brand-orbit { width: 64px; height: 64px; margin: 0 auto 1.5rem auto; position: relative; }
                 .brand-logo {
                     width: 100%; height: 100%;
-                    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+                    background: linear-gradient(135deg, #6366f1, #a855f7);
                     border-radius: 18px;
                     display: flex; align-items: center; justify-content: center;
                     font-size: 32px; font-weight: 900; color: white;
@@ -230,7 +198,7 @@ export default function LoginPage() {
                 }
                 .orbit-ring {
                     position: absolute; inset: -8px;
-                    border: 1px solid var(--accent); border-radius: 22px;
+                    border: 1px solid #6366f1; border-radius: 22px;
                     opacity: 0.3; animation: rotate 10s linear infinite;
                 }
                 @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -243,26 +211,25 @@ export default function LoginPage() {
                     background: rgba(239, 68, 68, 0.1);
                     border: 1px solid rgba(239, 68, 68, 0.2);
                     color: #f87171;
-                    padding: 0.75rem;
+                    padding: 1rem;
                     border-radius: 12px;
                     font-size: 0.75rem;
                     text-align: center;
                     margin-bottom: 2rem;
                     font-weight: 800;
+                    letter-spacing: 0.05em;
                 }
 
-                .input-group { margin-bottom: 1.5rem; }
-                .input-group label { display: block; font-size: 0.75rem; font-weight: 900; color: #e2e8f0; margin-bottom: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; }
+                .input-group { margin-bottom: 2rem; }
+                .input-group label { display: block; font-size: 0.75rem; font-weight: 900; color: #e2e8f0; margin-bottom: 1rem; letter-spacing: 0.1em; text-transform: uppercase; text-align: center; }
                 
                 .phone-wrapper { display: flex; gap: 12px; }
                 .country-selector {
-                    position: relative; width: 130px;
-                    background: rgba(255, 255, 255, 0.08);
+                    position: relative; width: 120px;
+                    background: rgba(255, 255, 255, 0.1);
                     border: 1px solid rgba(255, 255, 255, 0.2);
                     border-radius: 16px; overflow: hidden;
-                    transition: all 0.2s;
                 }
-                .country-selector:hover { background: rgba(255, 255, 255, 0.12); }
                 .country-selector select {
                     width: 100%; height: 100%; padding: 0 32px 0 16px;
                     background: transparent; border: none; color: #ffffff;
@@ -274,67 +241,38 @@ export default function LoginPage() {
                 .main-input {
                     flex: 1; background: rgba(255, 255, 255, 0.1);
                     border: 1px solid rgba(255, 255, 255, 0.3);
-                    border-radius: 16px; padding: 1.1rem 1.25rem;
-                    color: #ffffff; font-size: 1.2rem; font-weight: 800;
+                    border-radius: 16px; padding: 1.25rem;
+                    color: #ffffff; font-size: 1.25rem; font-weight: 900;
                     outline: none; transition: all 0.2s;
                     box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
                 }
-                .main-input::placeholder { color: rgba(255, 255, 255, 0.5); }
-                .main-input:focus { 
-                    border-color: #818cf8; background: rgba(255, 255, 255, 0.15);
-                    box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2), inset 0 2px 4px rgba(0,0,0,0.1);
-                }
+                .main-input:focus { border-color: #818cf8; background: rgba(255, 255, 255, 0.15); box-shadow: 0 0 20px rgba(129, 140, 248, 0.1); }
 
                 .btn-primary-cinematic {
-                    width: 100%; padding: 1.1rem;
-                    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-                    border: none; border-radius: 18px; color: white; font-weight: 900;
-                    letter-spacing: 0.05em; cursor: pointer;
+                    width: 100%; padding: 1.25rem;
+                    background: linear-gradient(135deg, #6366f1, #818cf8);
+                    border: none; border-radius: 20px; color: white; font-weight: 900;
+                    letter-spacing: 0.1em; cursor: pointer;
                     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+                    box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.4);
+                    text-transform: uppercase;
                 }
-                .btn-primary-cinematic:hover { transform: translateY(-2px); box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.6); }
+                .btn-primary-cinematic:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -5px rgba(99, 102, 241, 0.6); }
 
                 .otp-input {
-                    background: transparent; border: none; border-bottom: 2px solid #818cf8;
-                    width: 100%; text-align: center; font-size: 2.5rem;
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 20px;
+                    width: 100%; text-align: center; font-size: 2rem;
                     letter-spacing: 0.5em; color: #ffffff; font-weight: 900;
-                    outline: none; padding: 1rem 0;
+                    outline: none; padding: 1.25rem 0;
+                    transition: all 0.2s;
                 }
-                .otp-input::placeholder { color: rgba(255, 255, 255, 0.2); }
-                .hint { font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin-top: 1rem; }
-                .dev-otp { margin-top: 1rem; padding: 0.5rem; background: rgba(99,102,241,0.1); border-radius: 8px; font-size: 0.75rem; color: var(--accent); text-align: center; font-weight: bold; border: 1px dashed var(--accent); }
+                .otp-input:focus { border-color: #818cf8; background: rgba(255, 255, 255, 0.1); }
 
-                .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-                .btn-social {
-                    display: flex; align-items: center; justify-content: center; gap: 12px;
-                    padding: 1rem; border-radius: 18px; border: 1px solid rgba(255,255,255,0.1);
-                    background: rgba(255,255,255,0.03); color: white; font-weight: 800; font-size: 0.8rem;
-                    cursor: pointer; transition: all 0.2s;
-                }
-                .btn-social:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
-                .btn-social img, .btn-social svg { width: 20px; height: 20px; }
-                .btn-social.apple { background: white; color: black; border: none; }
-
-                .perspective-switcher {
-                    display: flex; justify-content: space-between;
-                    background: rgba(0,0,0,0.2); padding: 0.5rem;
-                    border-radius: 20px; margin-top: 3rem;
-                    border: 1px solid rgba(255,255,255,0.05);
-                }
-                .perspective-switcher button {
-                    flex: 1; padding: 0.6rem; border: none; background: transparent;
-                    color: var(--text-secondary); font-weight: 800; font-size: 0.65rem;
-                    cursor: pointer; border-radius: 14px; transition: all 0.3s;
-                }
-                .perspective-switcher button.active {
-                    background: rgba(255,255,255,0.05); color: white;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                }
-                .divider { width: 1px; background: rgba(255,255,255,0.05); margin: 0.5rem 0; }
-                .btn-link { background: none; border: none; color: #818cf8; font-size: 0.75rem; font-weight: 800; margin-top: 1.5rem; cursor: pointer; display: block; width: 100%; text-align: center; }
-                .auth-footer { text-align: center; margin-top: 3rem; font-size: 0.85rem; color: var(--text-secondary); }
-                .auth-footer a { color: #818cf8; font-weight: 800; text-decoration: none; }
+                .hint { font-size: 0.75rem; color: #94a3b8; text-align: center; margin: 1.5rem 0; font-weight: 600; }
+                .btn-link { background: none; border: none; color: #818cf8; font-size: 0.8rem; font-weight: 900; margin-top: 1rem; cursor: pointer; display: block; width: 100%; text-align: center; text-transform: uppercase; letter-spacing: 0.05em; }
+                .auth-footer { text-align: center; margin-top: 4rem; font-size: 0.65rem; color: #64748b; font-weight: 900; letter-spacing: 0.1em; }
             `}</style>
         </div>
     );

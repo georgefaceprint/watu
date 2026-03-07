@@ -1,37 +1,25 @@
 import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { executeQuery } from "@/lib/neo4j";
 import { generateUniqueId } from "@/lib/utils";
-import { verifyOTP } from "@/lib/otp";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
     providers: [
-        GoogleProvider({
-            clientId: process.env.GOOGLE_ID,
-            clientSecret: process.env.GOOGLE_SECRET,
-        }),
-
-        ...(process.env.APPLE_ID ? [AppleProvider({
-            clientId: process.env.APPLE_ID,
-            clientSecret: process.env.APPLE_SECRET,
-        })] : []),
-
-        // ─── Unified Phone Provider (Verification OR Access Code) ───
+        // ─── 2-STEP PHONE IDENTITY PROVIDER ────────────────────────
         CredentialsProvider({
             id: "phone",
-            name: "Phone Access",
+            name: "Phone Identity",
             credentials: {
                 phone: { label: "Phone", type: "text" },
-                otp: { label: "Code", type: "text" },
+                otp: { label: "Code", type: "text" }, // 'otp' is used for the 5-digit PIN
+                isNew: { label: "isNew", type: "text" }
             },
             async authorize(credentials) {
-                const { phone, otp } = credentials;
+                const { phone, otp, isNew } = credentials;
                 if (!phone || !otp) return null;
 
-                // 1. Check if user exists and has a permanent PIN
+                // 1. Check for existing identity
                 const result = await executeQuery(
                     `MATCH (p:Person) 
                      WHERE p.phone = $phone 
@@ -39,71 +27,46 @@ export const authOptions = {
                     { phone }
                 );
 
-                const existingUser = result && result.length > 0;
-                const hash = existingUser ? result[0].get('hash') : null;
+                const user = result && result.length > 0;
+                const existingHash = user ? result[0].get('hash') : null;
 
-                if (hash) {
-                    // ── Case A: Returning User (Verify Permanent PIN) ──
-                    const valid = await bcrypt.compare(otp, hash);
+                if (user && existingHash) {
+                    // ── Case A: Returning Identity (Verify PIN) ──
+                    const valid = await bcrypt.compare(otp, existingHash);
                     if (!valid) throw new Error("INCORRECT ACCESS CODE");
                     return { id: result[0].get('id'), name: result[0].get('name'), phone };
-                } else {
-                    // ── Case B: New User (Verify Temporary OTP) ──
-                    const validOtp = verifyOTP(phone, otp);
-                    if (!validOtp) throw new Error("INVALID VERIFICATION CODE");
+                }
+                else if (isNew === "true" || !existingHash) {
+                    // ── Case B: New Identity (Set PIN for the first time) ──
+                    const hash = await bcrypt.hash(otp, 10);
 
-                    if (existingUser) {
-                        // User exists but has no PIN yet
+                    if (user) {
+                        // Identity exists (maybe a stub) but has no PIN
+                        await executeQuery(
+                            `MATCH (p:Person {phone: $phone}) SET p.accessCodeHash = $hash RETURN p`,
+                            { phone, hash }
+                        );
                         return { id: result[0].get('id'), name: result[0].get('name'), phone };
                     } else {
-                        // Brand new "stub" creation
+                        // Brand new profile
                         const id = generateUniqueId();
                         await executeQuery(
                             `CREATE (p:Person { 
                                 id: $id, 
                                 name: 'NEW', 
                                 phone: $phone, 
+                                accessCodeHash: $hash,
                                 provider: 'phone', 
                                 createdAt: datetime() 
                             })`,
-                            { id, phone }
+                            { id, phone, hash }
                         );
                         return { id, name: 'NEW', phone };
                     }
                 }
+
+                throw new Error("IDENTITY NOT FOUND OR UNVERIFIED");
             }
-        }),
-
-        // ─── Watu ID + Password ──────────────────────────────────────
-        CredentialsProvider({
-            id: "credentials",
-            name: "Watu ID",
-            credentials: {
-                id: { label: "Watu ID", type: "text" },
-                password: { label: "Password", type: "password" },
-            },
-            async authorize(credentials) {
-                const { id, password } = credentials;
-                if (!id || !password) return null;
-
-                const result = await executeQuery(
-                    `MATCH (p:Person {id: $id}) RETURN p`,
-                    { id: id.toUpperCase() }
-                );
-
-                if (!result || result.length === 0) throw new Error("IDENTITY NOT FOUND");
-
-                const userNode = result[0].get("p");
-                const user = userNode.properties;
-                const valid = await bcrypt.compare(password, user.passwordHash);
-                if (!valid) throw new Error("INVALID PASSWORD");
-
-                return {
-                    id: user.id,
-                    name: `${user.name} ${user.surname || ''}`.trim(),
-                    email: user.email || null,
-                };
-            },
         }),
     ],
 
@@ -119,32 +82,7 @@ export const authOptions = {
             session.user.id = token.watuId || token.sub;
             session.user.watuId = token.watuId;
             return session;
-        },
-        async signIn({ user, account }) {
-            if (account?.provider === "google" || account?.provider === "apple") {
-                try {
-                    const existingResult = await executeQuery(
-                        `MATCH (p:Person {email: $email}) RETURN p.id as id LIMIT 1`,
-                        { email: user.email }
-                    );
-                    if (existingResult.length === 0) {
-                        const id = generateUniqueId();
-                        await executeQuery(
-                            `CREATE (p:Person { id: $id, name: $name, email: $email, provider: $provider, createdAt: datetime() })`,
-                            { id, name: user.name?.split(" ")[0] || "NEW", email: user.email, provider: account.provider }
-                        );
-                        user.id = id;
-                    } else {
-                        user.id = existingResult[0].get("id");
-                    }
-                    return true;
-                } catch (err) {
-                    console.error("❌ OAUTH SIGN-IN ERROR:", err);
-                    return false;
-                }
-            }
-            return true;
-        },
+        }
     },
 
     secret: process.env.NEXTAUTH_SECRET || "watu_network_auth_secret_777",
