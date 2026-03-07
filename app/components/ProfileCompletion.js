@@ -60,11 +60,11 @@ export default function ProfileCompletion() {
             </div>
 
             <button
-                onClick={() => router.push('/profile')}
+                onClick={() => router.push('/onboard')}
                 className="btn-primary"
                 style={{ width: '100%', marginTop: '16px', padding: '10px', fontSize: '0.75rem' }}
             >
-                COMPLETE MY PROFILE
+                START 3-STEP ONBOARDING
             </button>
 
             <style jsx>{`
