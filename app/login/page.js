@@ -207,17 +207,17 @@ export default function LoginPage() {
                     align-items: center;
                     justify-content: center;
                     padding: 2rem;
-                    background: radial-gradient(circle at top right, #1e293b, #0f172a, #020617);
+                    background: radial-gradient(circle at top right, #4338ca, #1e1b4b, #0f172a);
                 }
                 .auth-glass-container {
                     width: 100%;
                     max-width: 480px;
-                    background: rgba(15, 23, 42, 0.9);
+                    background: rgba(30, 41, 59, 0.85); /* Lightened from indigo-900 */
                     backdrop-filter: blur(40px);
-                    border: 1px solid rgba(255,255,255,0.15);
+                    border: 1px solid rgba(255, 255, 255, 0.25); /* Stronger border */
                     border-radius: 32px;
-                    padding: 3rem 2.5rem;
-                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+                    padding: 3.5rem 2.5rem;
+                    box-shadow: 0 0 80px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.2);
                     position: relative;
                     overflow: hidden;
                 }
@@ -257,9 +257,9 @@ export default function LoginPage() {
                 }
                 @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-                h1 { font-size: 2rem; margin: 0; letter-spacing: -0.02em; }
-                .accent-text { color: var(--accent); }
-                .subtitle { font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 0.2em; margin-top: 0.5rem; font-weight: 800; }
+                h1 { font-size: 2.2rem; margin: 0; letter-spacing: -0.03em; font-weight: 900; }
+                .accent-text { color: #818cf8; text-shadow: 0 0 20px rgba(129, 140, 248, 0.4); }
+                .subtitle { font-size: 0.75rem; color: #cbd5e1; letter-spacing: 0.25em; margin-top: 0.5rem; font-weight: 900; }
 
                 .error-alert {
                     background: rgba(239, 68, 68, 0.1);
@@ -274,7 +274,7 @@ export default function LoginPage() {
                 }
 
                 .input-group { margin-bottom: 1.5rem; }
-                .input-group label { display: block; font-size: 0.7rem; font-weight: 900; color: var(--text-secondary); margin-bottom: 0.75rem; letter-spacing: 0.05em; }
+                .input-group label { display: block; font-size: 0.75rem; font-weight: 900; color: #e2e8f0; margin-bottom: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; }
                 
                 .phone-wrapper { display: flex; gap: 12px; }
                 .country-selector {
@@ -305,10 +305,10 @@ export default function LoginPage() {
                 }
                 .selector-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #ffffff; pointer-events: none; opacity: 0.7; }
 
-                .main-input {
+                 .main-input {
                     flex: 1;
-                    background: rgba(255, 255, 255, 0.05);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
                     border-radius: 16px;
                     padding: 1.1rem 1.25rem;
                     color: #ffffff;
@@ -316,14 +316,15 @@ export default function LoginPage() {
                     font-weight: 800;
                     outline: none;
                     transition: all 0.2s;
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
                 }
                 .main-input::placeholder {
-                    color: rgba(255, 255, 255, 0.3);
+                    color: rgba(255, 255, 255, 0.5);
                 }
                 .main-input:focus { 
-                    border-color: var(--accent); 
-                    background: rgba(255, 255, 255, 0.1);
-                    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+                    border-color: #818cf8; 
+                    background: rgba(255, 255, 255, 0.15);
+                    box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2), inset 0 2px 4px rgba(0,0,0,0.1);
                 }
 
                 .btn-primary-cinematic {

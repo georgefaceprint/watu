@@ -270,17 +270,17 @@ export default function OnboardPage() {
                     align-items: center;
                     justify-content: center;
                     padding: 2rem;
-                    background: radial-gradient(circle at top right, #1e293b, #0f172a, #020617);
+                    background: radial-gradient(circle at top right, #4338ca, #1e1b4b, #0f172a);
                 }
                 .onboard-glass {
                     width: 100%;
                     max-width: 520px;
-                    background: rgba(15, 23, 42, 0.9);
+                    background: rgba(30, 41, 59, 0.85);
                     backdrop-filter: blur(40px);
-                    border: 1px solid rgba(255,255,255,0.15);
+                    border: 1px solid rgba(255, 255, 255, 0.25);
                     border-radius: 32px;
-                    padding: 3rem 2.5rem;
-                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+                    padding: 3.5rem 2.5rem;
+                    box-shadow: 0 0 80px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.2);
                     position: relative;
                 }
                 .step-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 2rem; }
@@ -294,20 +294,21 @@ export default function OnboardPage() {
                 .subtitle { font-size: 0.7rem; color: var(--accent); letter-spacing: 0.2em; margin-top: 0.5rem; font-weight: 800; }
 
                 .input-group { margin-bottom: 1.5rem; }
-                .input-group label { display: block; font-size: 0.65rem; font-weight: 900; color: var(--text-secondary); margin-bottom: 0.75rem; letter-spacing: 0.05em; }
+                .input-group label { display: block; font-size: 0.75rem; font-weight: 900; color: #e2e8f0; margin-bottom: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; }
                 
                 input, select, .main-input {
                     width: 100%;
-                    background: rgba(255,255,255,0.05);
-                    border: 1px solid rgba(255,255,255,0.15);
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
                     border-radius: 16px;
                     padding: 1rem 1.25rem;
                     color: white;
                     font-size: 1rem;
+                    font-weight: 700;
                     outline: none;
                     transition: all 0.2s;
                 }
-                input:focus, select:focus, .main-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); }
+                input:focus, select:focus, .main-input:focus { border-color: #818cf8; background: rgba(255, 255, 255, 0.15); box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2); }
 
                 .otp-pin-input {
                     font-size: 2rem !important;
