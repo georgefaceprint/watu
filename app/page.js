@@ -66,57 +66,8 @@ export default function HomePage() {
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: '3rem', paddingBottom: '100px' }}>
-            {/* Hero Section */}
-            <section style={{
-                textAlign: 'center',
-                padding: '4rem 1.5rem',
-                background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
-                animation: 'fadeInUp 1s ease-out'
-            }}>
-                <div style={{
-                    display: 'inline-block',
-                    padding: '8px 16px',
-                    borderRadius: '999px',
-                    background: 'rgba(99, 102, 241, 0.1)',
-                    border: '1px solid rgba(99, 102, 241, 0.2)',
-                    color: '#818cf8',
-                    fontSize: '0.875rem',
-                    fontWeight: '600',
-                    marginBottom: '1.5rem'
-                }}>
-                    The Future of Heritage is Here
-                </div>
-                <h1 style={{
-                    fontSize: isMobile ? '2.5rem' : '4rem',
-                    lineHeight: '1.1',
-                    background: 'linear-gradient(to bottom, #fff, #94a3b8)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    marginBottom: '1.5rem'
-                }}>
-                    Connect with Your <br /> Legacy on Watu.Network
-                </h1>
-                <p style={{
-                    color: 'var(--text-secondary)',
-                    fontSize: isMobile ? '1rem' : '1.25rem',
-                    maxWidth: '600px',
-                    margin: '0 auto 2.5rem auto'
-                }}>
-                    Trace your ancestry, unite your clan, and protect your digital heritage in a secure, collaborative community built for generations.
-                </p>
-
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <a href="/onboard">
-                        <button className="btn-primary">Get Started Now</button>
-                    </a>
-                    <a href="/connect">
-                        <button className="btn-secondary">Search Ancestry</button>
-                    </a>
-                </div>
-            </section>
-
             {/* Tree Section - FULL CINEMATIC LAYOUT */}
-            <section style={{ width: '100%', padding: '0', marginTop: '-2rem' }}>
+            <section style={{ width: '100%', padding: '0', marginTop: '0' }}>
                 <div style={{ position: 'relative', minHeight: '800px' }}>
                     <div style={{
                         position: 'absolute',
@@ -212,16 +163,6 @@ export default function HomePage() {
 }
 
 const styles = `
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 .search-input {
     background: var(--card);
     border: 1px solid var(--border);
