@@ -90,18 +90,18 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         const links = [...data.links];
         const nodeMap = new Map(nodes.map(n => [n.id, n]));
         const focusNode = nodeMap.get(focusId) || nodes[0];
-        const currentFocusId = focusNode.id;
+        const currentFocusId = focusNode?.id;
+
+        if (!currentFocusId) return;
 
         // ─── DYNAMIC GENERATIONAL MAPPING (BFS) ──────────────
         // This calculates the generational offset from the focus node
-        // Ancestors = -1, -2... | Peers = 0 | Descendants = 1, 2...
         const queue = [{ id: currentFocusId, gen: 0 }];
         const visited = new Set([currentFocusId]);
         const nodeGenMap = { [currentFocusId]: 0 };
 
         while (queue.length > 0) {
             const { id, gen } = queue.shift();
-
             links.forEach(l => {
                 let neighborId = null;
                 let nextGen = gen;
@@ -112,14 +112,14 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                     else if (l.type === 'PARENT_OF') nextGen = gen + 1;
                     else if (l.type === 'GRANDPARENT_OF') nextGen = gen + 2;
                     else if (l.type === 'GRANDCHILD_OF') nextGen = gen - 2;
-                    else nextGen = gen; // Sibling/Spouse/Cousin
+                    else nextGen = gen; // Spouses, Siblings, Cousins
                 } else if (l.target === id) {
                     neighborId = l.source;
                     if (l.type === 'CHILD_OF') nextGen = gen + 1;
                     else if (l.type === 'PARENT_OF') nextGen = gen - 1;
                     else if (l.type === 'GRANDPARENT_OF') nextGen = gen - 2;
                     else if (l.type === 'GRANDCHILD_OF') nextGen = gen + 2;
-                    else nextGen = gen; // Sibling/Spouse/Cousin
+                    else nextGen = gen; // Spouses, Siblings, Cousins
                 }
 
                 if (neighborId && !visited.has(neighborId)) {
@@ -131,37 +131,51 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         }
 
         const levels = {};
-        const visibleLinks = links.filter(l => nodeMap.get(l.source)?.level !== 99 && nodeMap.get(l.target)?.level !== 99);
 
+        // 1st Pass: Assign Levels
         nodes.forEach(n => {
             const gen = nodeGenMap[n.id];
             if (gen !== undefined) {
                 n.level = gen;
                 if (!levels[gen]) levels[gen] = [];
                 levels[gen].push(n);
-
-                // Add Descriptive Label based on Sex and Level
-                const isFemale = n.sex?.toLowerCase() === 'female' || n.maidenName;
-                if (gen === 0) {
-                    if (n.id === currentFocusId) n.relLabel = 'ARCHIVE FOCUS';
-                    else {
-                        const linkToFocus = visibleLinks.find(l => (l.source === currentFocusId && l.target === n.id) || (l.target === currentFocusId && l.source === n.id));
-                        if (linkToFocus?.type === 'SPOUSE_OF') n.relLabel = isFemale ? 'WIFE' : 'HUSBAND';
-                        else if (linkToFocus?.type === 'SIBLING_OF') n.relLabel = isFemale ? 'SISTER' : 'BROTHER';
-                        else if (linkToFocus?.type === 'COUSIN_OF') n.relLabel = 'COUSIN';
-                        else if (n.level === 0) n.relLabel = isFemale ? 'SISTER' : 'BROTHER'; // Fallback for sibling logic in BFS
-                        else n.relLabel = 'CLAN KIN';
-                    }
-                } else if (gen === -1) n.relLabel = isFemale ? 'MOTHER' : 'FATHER';
-                else if (gen === -2) n.relLabel = isFemale ? 'GRANDMOTHER' : 'GRANDFATHER';
-                else if (gen === -3) n.relLabel = isFemale ? 'GREAT GRANDMOTHER' : 'GREAT GRANDFATHER';
-                else if (gen < -3) n.relLabel = `L${Math.abs(gen)} ANCESTOR`;
-                else if (gen === 1) n.relLabel = isFemale ? 'DAUGHTER' : 'SON';
-                else if (gen === 2) n.relLabel = isFemale ? 'GRANDDAUGHTER' : 'GRANDSON';
-                else if (gen > 2) n.relLabel = `L${gen} DESCENDANT`;
             } else {
                 n.level = 99; // Orphaned from focus
             }
+        });
+
+        // 2nd Pass: Filter Links (Now that levels are guaranteed)
+        const visibleLinks = links.filter(l => nodeMap.get(l.source)?.level !== 99 && nodeMap.get(l.target)?.level !== 99);
+
+        // 3rd Pass: Assign Descriptive Labels relative to focus
+        nodes.forEach(n => {
+            if (n.level === 99) return;
+            const gen = n.level;
+            const isFemale = n.sex?.toLowerCase() === 'female' || n.maidenName;
+
+            if (gen === 0) {
+                if (n.id === currentFocusId) {
+                    n.relLabel = 'ARCHIVE FOCUS';
+                } else {
+                    const linkToFocus = visibleLinks.find(l => (l.source === currentFocusId && l.target === n.id) || (l.target === currentFocusId && l.source === n.id));
+
+                    // PRO-LEVEL LOGIC: Infer siblinghood from shared parent links if explicit link is missing
+                    const focusParentIds = visibleLinks.filter(l => (l.source === currentFocusId && l.type === 'CHILD_OF') || (l.target === currentFocusId && l.type === 'PARENT_OF')).map(l => l.source === currentFocusId ? l.target : l.source);
+                    const nodeParentIds = visibleLinks.filter(l => (l.source === n.id && l.type === 'CHILD_OF') || (l.target === n.id && l.type === 'PARENT_OF')).map(l => l.source === n.id ? l.target : l.source);
+                    const isSibling = linkToFocus?.type === 'SIBLING_OF' || (focusParentIds.length > 0 && focusParentIds.some(pid => nodeParentIds.includes(pid)));
+
+                    if (linkToFocus?.type === 'SPOUSE_OF') n.relLabel = isFemale ? 'WIFE' : 'HUSBAND';
+                    else if (isSibling) n.relLabel = isFemale ? 'SISTER' : 'BROTHER';
+                    else if (linkToFocus?.type === 'COUSIN_OF') n.relLabel = 'COUSIN';
+                    else n.relLabel = 'CLAN KIN';
+                }
+            } else if (gen === -1) n.relLabel = isFemale ? 'MOTHER' : 'FATHER';
+            else if (gen === -2) n.relLabel = isFemale ? 'GRANDMOTHER' : 'GRANDFATHER';
+            else if (gen === -3) n.relLabel = isFemale ? 'GREAT GRANDMOTHER' : 'GREAT GRANDFATHER';
+            else if (gen < -3) n.relLabel = `L${Math.abs(gen)} ANCESTOR`;
+            else if (gen === 1) n.relLabel = isFemale ? 'DAUGHTER' : 'SON';
+            else if (gen === 2) n.relLabel = isFemale ? 'GRANDDAUGHTER' : 'GRANDSON';
+            else if (gen > 2) n.relLabel = `L${gen} DESCENDANT`;
         });
 
         // Position nodes using sorted generational levels
@@ -263,6 +277,11 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
 
         const nodeUpdate = node.merge(nodeEnter);
 
+        // Bring focus node to front
+        nodeUpdate.each(function (d) {
+            if (d.id === currentFocusId) d3.select(this).raise();
+        });
+
         nodeUpdate.transition(t)
             .style("opacity", 1)
             .attr("x", d => d.x - cardW / 2)
@@ -332,9 +351,23 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 }
                 .person-card.active {
                     border-color: #ef4444;
-                    border-width: 3px;
-                    box-shadow: 0 0 80px rgba(239, 68, 68, 0.5);
-                    transform: scale(1.02);
+                    border-width: 2px;
+                    box-shadow: 0 0 100px rgba(239, 68, 68, 0.6), inset 0 0 30px rgba(239, 68, 68, 0.2);
+                    transform: scale(1.02) translateY(-10px);
+                    z-index: 100;
+                }
+                .person-card.active::before {
+                    content: '';
+                    position: absolute;
+                    inset: -2px;
+                    background: linear-gradient(45deg, #ef4444, transparent, #ef4444);
+                    opacity: 0.3;
+                    z-index: -1;
+                    animation: rotateAura 4s linear infinite;
+                }
+                @keyframes rotateAura {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
                 }
                 .person-card.deceased {
                     filter: grayscale(0.8) contrast(1.1) brightness(0.9);
@@ -372,17 +405,30 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 }
                 .avatar-img { width: 100%; height: 100%; object-fit: cover; }
                 .avatar-fallback { font-size: 80px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2)); }
+                .avatar-container::after {
+                    content: '';
+                    position: absolute;
+                    top: -100%;
+                    left: 0;
+                    width: 100%;
+                    height: 50%;
+                    background: linear-gradient(to bottom, transparent, rgba(239, 68, 68, 0.1), transparent);
+                    animation: scanAvatar 4s linear infinite;
+                    pointer-events: none;
+                }
+                @keyframes scanAvatar { 0% { top: -100%; } 100% { top: 200%; } }
                 
                 .focus-pulse {
                     position: absolute;
-                    inset: -8px;
+                    inset: -12px;
                     border: 2px solid #ef4444;
-                    border-radius: 20px;
-                    animation: pulseRed 2s infinite;
+                    border-radius: 24px;
+                    animation: pulseRed 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
                 }
                 @keyframes pulseRed {
-                    0% { opacity: 0.8; transform: scale(1); }
-                    100% { opacity: 0; transform: scale(1.15); }
+                    0% { opacity: 0.8; transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+                    70% { opacity: 0.3; transform: scale(1.1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+                    100% { opacity: 0; transform: scale(1.2); }
                 }
 
                 .card-info { text-align: center; width: 100%; }
