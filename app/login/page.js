@@ -68,8 +68,13 @@ export default function LoginPage() {
 
             if (res?.error) throw new Error(res.error);
 
-            // Redirect to home or onboard
-            router.push('/');
+            // If name is 'NEW' this is a first-time user → send to onboarding
+            if (res?.ok) {
+                const sessionRes = await fetch('/api/auth/session');
+                const sessionData = await sessionRes.json();
+                const isNewIdentity = !sessionData?.user?.name || sessionData.user.name === 'NEW';
+                router.push(isNewIdentity ? '/onboard' : '/');
+            }
         } catch (err) {
             setError(err.message.toUpperCase());
         } finally {

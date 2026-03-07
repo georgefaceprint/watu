@@ -27,8 +27,15 @@ export default function ProfileCompletion() {
         }
     }, [session, status, pathname]);
 
-    // Don't show on the profile page itself to avoid redundancy, or if already 100%
-    if (!completeness || completeness.percent === 100 || pathname === '/profile' || pathname === '/onboard') return null;
+    // Don't show on profile/onboard pages or when complete
+    if (!completeness || completeness.percent >= 100) return null;
+    if (pathname?.startsWith('/onboard') || pathname?.startsWith('/login') || pathname === '/profile') return null;
+
+    const needsOnboarding = completeness.missing.some(m =>
+        ['Given Name', 'Surname', 'Ancestral Tribe', 'Clan'].includes(m)
+    );
+    const actionLabel = needsOnboarding ? 'COMPLETE ONBOARDING' : 'UPDATE PROFILE PHOTO';
+    const actionRoute = needsOnboarding ? '/onboard' : '/profile';
 
     return (
         <div className="completion-mini-module glass animate-slide-up">
@@ -60,11 +67,11 @@ export default function ProfileCompletion() {
             </div>
 
             <button
-                onClick={() => router.push('/onboard')}
+                onClick={() => router.push(actionRoute)}
                 className="btn-primary"
                 style={{ width: '100%', marginTop: '16px', padding: '10px', fontSize: '0.75rem' }}
             >
-                START 3-STEP ONBOARDING
+                {actionLabel}
             </button>
 
             <style jsx>{`
