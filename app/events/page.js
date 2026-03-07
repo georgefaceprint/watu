@@ -134,11 +134,11 @@ export default function EventsPage() {
             }}>
                 <h2 style={{ fontSize: '1.75rem', color: 'var(--foreground)', marginBottom: '1rem' }}>Host Your Own Family Event?</h2>
                 <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', margin: '0 auto 2rem auto', fontSize: '1rem' }}>
-                    Clan administrators can organize gatherings, fundraisers, and workshops. Premium event management is included with <strong>MyHazina Heritage Subscriptions</strong>.
+                    Clan administrators can organize gatherings, fundraisers, and workshops. Premium event management is included with <strong>Familia Heritage Subscriptions</strong>.
                 </p>
                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                     <button className="btn-secondary" style={{ padding: '0.75rem 2rem' }}>Learn More</button>
-                    <a href="https://myhazina.org" target="_blank" style={{ textDecoration: 'none' }}>
+                    <a href="/onboard" style={{ textDecoration: 'none' }}>
                         <button className="btn-primary" style={{ padding: '0.75rem 2rem' }}>Upgrade Plan</button>
                     </a>
                 </div>

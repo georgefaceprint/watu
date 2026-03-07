@@ -14,7 +14,7 @@ This document summarizes the current implementation status and identifies the re
 - ✅ **Interactive Tree**: D3.js powered genealogy explorer with zoom/pan and highlight-on-search.
 - ✅ **Advanced Onboarding**: Multi-stepped Kenyan-native onboarding flow with unique ID generation.
 - ✅ **Social Network**: Person-to-person connection system with "Pending" verification states.
-- ✅ **Heritage Protection**: Integrated MyHazina.org referral and status tracking.
+- ✅ **Heritage Protection**: Integrated Familia Heritage referral and status tracking.
 - ✅ **Admin Hub**: Growth tracking dashboard with a 10k-user progress meter.
 - ✅ **Communication UI**: High-end chat and family group interfaces (layout-ready).
 

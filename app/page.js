@@ -35,11 +35,13 @@ export default function HomePage() {
 
     useEffect(() => {
         if (session?.user?.watuId) {
+            console.log("🌳 Tree Session Active ID:", session.user.watuId);
             setSearchId(session.user.watuId);
             fetchTree(session.user.watuId);
         } else {
-            // Fallback for guests or if session not ready
-            fetchTree('S7A4B1');
+            // Fallback to seeded demo user
+            console.log("🌳 Tree Fallback ID: XT4NAS");
+            fetchTree('XT4NAS');
         }
     }, [session]);
 
@@ -94,45 +96,62 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* Tree Section */}
-            <section style={{ width: '100%', maxWidth: '1000px', margin: '0 auto', padding: '0 1rem' }}>
-                <div className="glass" style={{ padding: '0', overflow: 'hidden' }}>
-                    <div style={{ padding: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '2rem' }}>
-                        <div style={{ flex: 1 }}>
-                            <h2 style={{ fontSize: '1.75rem', color: '#fff', marginBottom: '0.5rem' }}>LINEAGE EXPLORER</h2>
-                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', maxWidth: '450px' }}>
-                                ENTER A UNIQUE WATU ID TO MAP A CLAN BRANCH AND DISCOVER ANCESTRAL CONNECTIONS IN OUR LIVE CRYPTOCURRENCY-BACKED ARCHIVE.
-                            </p>
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', minWidth: '320px' }}>
-                            <input
-                                className="search-input"
-                                placeholder="ENTER WATU ID (E.G. S7A4B1)"
-                                value={searchId}
-                                onChange={e => setSearchId(e.target.value)}
-                                style={{ flex: 1, textTransform: 'uppercase' }}
-                            />
-                            <button
-                                className="btn-primary"
-                                style={{ padding: '0 1.5rem' }}
-                                onClick={() => fetchTree(searchId)}
-                                disabled={loadingTree}
-                            >
-                                {loadingTree ? '...' : 'FIND'}
-                            </button>
-                        </div>
+            {/* Tree Section - FULL CINEMATIC LAYOUT */}
+            <section style={{ width: '100%', padding: '0', marginTop: '-2rem' }}>
+                <div style={{ position: 'relative', minHeight: '800px' }}>
+                    <div style={{
+                        position: 'absolute',
+                        top: '4rem',
+                        left: '4rem',
+                        zIndex: 20,
+                        pointerEvents: 'none',
+                        maxWidth: '400px'
+                    }}>
+                        <h2 style={{ fontSize: '2.5rem', color: '#fff', marginBottom: '1rem', letterSpacing: '-0.02em' }}>LINEAGE EXPLORER</h2>
+                        <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.6)', lineHeight: '1.6' }}>
+                            MAPPING THE WATU.NETWORK CLAN BRANCHES. <br />
+                            DISCOVER CONNECTIONS SECURED IN THE GLOBAL HERITAGE ARCHIVE.
+                        </p>
                     </div>
-                    <div style={{ position: 'relative' }}>
-                        {loadingTree && (
-                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontWeight: 'bold' }}>
-                                RELAYING ANCESTRAL DATA...
-                            </div>
-                        )}
-                        <FamilyTreeVis data={treeData} onNodeClick={(d) => {
+
+                    <div style={{
+                        position: 'absolute',
+                        top: '4rem',
+                        right: '4rem',
+                        zIndex: 20,
+                        display: 'flex',
+                        gap: '12px'
+                    }}>
+                        <input
+                            className="search-input"
+                            placeholder="SEARCH WATU ID..."
+                            value={searchId}
+                            onChange={e => setSearchId(e.target.value)}
+                            style={{
+                                background: 'rgba(15, 23, 42, 0.8)',
+                                backdropFilter: 'blur(20px)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                color: '#fff',
+                                width: '250px'
+                            }}
+                        />
+                        <button
+                            className="btn-primary"
+                            onClick={() => fetchTree(searchId)}
+                            disabled={loadingTree}
+                        >
+                            {loadingTree ? '...' : 'SCAN'}
+                        </button>
+                    </div>
+
+                    <FamilyTreeVis
+                        data={treeData}
+                        focusId={searchId}
+                        onNodeClick={(d) => {
                             setSearchId(d.id);
                             fetchTree(d.id);
-                        }} />
-                    </div>
+                        }}
+                    />
                 </div>
             </section>
 
@@ -157,8 +176,8 @@ export default function HomePage() {
                         Join over 10,000 clans worldwide. Ensure your family's future legacy is as secure as their history.
                     </p>
                     <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <a href="https://myhazina.org" target="_blank" style={{ color: '#818cf8', fontWeight: '600' }}>
-                            Visit MyHazina.org &rarr;
+                        <a href="/onboard" style={{ color: '#818cf8', fontWeight: '600' }}>
+                            Join Familia Network &rarr;
                         </a>
                         <a href="/events" style={{ color: '#818cf8', fontWeight: '600' }}>
                             Join Community Events &rarr;

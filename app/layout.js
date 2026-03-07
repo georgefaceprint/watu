@@ -60,7 +60,7 @@ export default function RootLayout({ children }) {
                             <a href="/connect" style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--foreground)' }}>Connect</a>
                             <a href="/events" style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--foreground)' }}>Events</a>
                             <a href="/profile" style={{ fontSize: '0.9rem', fontWeight: '500', color: 'var(--foreground)' }}>My Profile</a>
-                            <a href="https://myhazina.org" target="_blank" style={{
+                            <a href="/onboard" style={{
                                 background: 'var(--accent-muted)',
                                 border: '1px solid var(--border)',
                                 padding: '6px 16px',
@@ -69,7 +69,7 @@ export default function RootLayout({ children }) {
                                 fontWeight: '600',
                                 color: 'var(--accent)',
                                 textDecoration: 'none'
-                            }}>MyHazina</a>
+                            }}>Get Watu ID</a>
                             <SignOutButton />
                         </div>
                     </header>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 export default function ClansPage() {
     const [clans, setClans] = useState([
         { id: 1, name: 'Sifuna Clan Network', members: 45, type: 'VERIFIED', growth: '+12%', protected: false },
-        { id: 2, name: 'Hazina Ancestry Circle', members: 120, type: 'HERITAGE', growth: '+5%', protected: true },
+        { id: 2, name: 'Watu Heritage Circle', members: 120, type: 'HERITAGE', growth: '+5%', protected: true },
         { id: 3, name: 'Ndlela Heritage Group', members: 89, type: 'CLAN', growth: '+25%', protected: true },
     ]);
 
@@ -85,8 +85,8 @@ export default function ClansPage() {
                                 gap: '8px'
                             }}>
                                 <p style={{ fontSize: '0.8rem', color: '#ef4444', margin: 0, fontWeight: '700' }}>⚠️ Legacy At Risk</p>
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>No active MyHazina Funeral Plan linked to this clan.</p>
-                                <a href="https://myhazina.org" target="_blank" style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: '700', textDecoration: 'underline' }}>Activate Protection →</a>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>No active Watu Protection Plan linked to this clan.</p>
+                                <a href="/onboard" style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: '700', textDecoration: 'underline' }}>Activate Protection →</a>
                             </div>
                         )}
 

@@ -78,7 +78,7 @@ export async function POST(request) {
             if (records.length === 0) {
                 return Response.json({ error: 'You are not authorized to verify this connection or relationship not found.' }, { status: 403 });
             }
-            return Response.json({ success: true, message: 'Relationship verified in the vault' });
+            return Response.json({ success: true, message: 'Relationship verified in the vault', triggerRefresh: true });
         } catch (err) {
             return Response.json({ error: err.message }, { status: 500 });
         }
@@ -133,7 +133,7 @@ export async function POST(request) {
                 return Response.json({ error: `The ID (${personId}) was not found in our records.` }, { status: 404 });
             }
 
-            return Response.json({ success: true, id: newId, message: 'RELATIVE ADDED & CONNECTED' });
+            return Response.json({ success: true, id: newId, message: 'RELATIVE ADDED & CONNECTED', triggerRefresh: true });
         } catch (err) {
             return Response.json({ error: err.message }, { status: 500 });
         }
@@ -158,8 +158,9 @@ export async function POST(request) {
         if (records.length === 0) throw new Error('Person or Relative not found in the heritage vault.');
         return Response.json({
             success: true,
-            status: records[0].get('status'),
-            connection: records[0].toObject()
+            status: status,
+            connection: records[0].toObject(),
+            triggerRefresh: status === 'VERIFIED'
         });
     } catch (err) {
         return Response.json({ error: err.message }, { status: 500 });

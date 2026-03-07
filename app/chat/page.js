@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { useSession } from 'next-auth/react';
 
 export default function ChatPage() {
+    const { data: session } = useSession();
     const [activeTab, setActiveTab] = useState('chats');
     const [selectedId, setSelectedId] = useState(null);
     const [input, setInput] = useState('');
@@ -15,11 +17,7 @@ export default function ChatPage() {
         { id: 3, name: 'Moyo Family Legacy', type: 'CLAN', members: 89, lastMessage: 'Bheki: The funeral plan is now active.', time: '2 days ago', unread: 0 },
     ]);
 
-    const [messages, setMessages] = useState([
-        { id: 'initial-1', sender: 'Nelson Ndlela', text: 'Peace be upon you all. I have updated our patriarch lineage.', time: '10:00 AM', isMe: false },
-        { id: 'initial-2', sender: 'Me', text: 'Thank you Nelson. I can see the new connections on the tree.', time: '10:15 AM', isMe: true },
-        { id: 'initial-3', sender: 'Thabo', text: 'This system is much faster than the old manual records.', time: '10:20 AM', isMe: false },
-    ]);
+    const [messages, setMessages] = useState([]);
 
     useEffect(() => {
         // Initialize socket connection
@@ -32,17 +30,25 @@ export default function ChatPage() {
             socket.on('receive-message', (msg) => {
                 setMessages(prev => {
                     // Avoid duplicate messages for sender (already added locally)
-                    if (msg.senderId === socket.id) return prev;
+                    if (msg.senderId === session?.user?.watuId) return prev;
                     return [...prev, { ...msg, isMe: false }];
                 });
             });
 
+            socket.on('chat-history', (history) => {
+                setMessages(history.map(msg => ({
+                    ...msg,
+                    isMe: msg.senderId === session?.user?.watuId
+                })));
+            });
+
             return () => socket.disconnect();
         });
-    }, []);
+    }, [session?.user?.watuId]);
 
     useEffect(() => {
         if (selectedId && socketRef.current) {
+            setMessages([]); // Clear while loading history
             socketRef.current.emit('join-room', `group-${selectedId}`);
         }
     }, [selectedId]);
@@ -55,14 +61,14 @@ export default function ChatPage() {
 
     const handleSend = (e) => {
         e.preventDefault();
-        if (!input.trim() || !socketRef.current) return;
+        if (!input.trim() || !socketRef.current || !session?.user) return;
 
         const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const newMessage = {
             id: Date.now(),
             roomId: `group-${selectedId}`,
-            sender: 'Me',
-            senderId: socketRef.current.id,
+            sender: session.user.name || 'Anonymous',
+            senderId: session.user.watuId,
             text: input,
             time: timestamp,
             isMe: true
