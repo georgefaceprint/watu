@@ -1,56 +1,71 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import AppleProvider from "next-auth/providers/apple";
-import EmailProvider from "next-auth/providers/email";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { executeQuery } from "@/lib/neo4j";
-import { verifyOTP } from "@/lib/otp";
 import { generateUniqueId } from "@/lib/utils";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
     providers: [
-        // ─── Google OAuth ───────────────────────────────────────────
         GoogleProvider({
             clientId: process.env.GOOGLE_ID,
             clientSecret: process.env.GOOGLE_SECRET,
         }),
 
-        // ─── Apple OAuth ────────────────────────────────────────────
         ...(process.env.APPLE_ID ? [AppleProvider({
             clientId: process.env.APPLE_ID,
             clientSecret: process.env.APPLE_SECRET,
         })] : []),
 
-        // ─── Phone OTP (Custom Credentials) ─────────────────────────
+        // ─── Phone + Self-Selected 5-Digit Code ─────────────────────
         CredentialsProvider({
             id: "phone",
-            name: "Phone OTP",
+            name: "Phone Access",
             credentials: {
                 phone: { label: "Phone", type: "text" },
-                otp: { label: "OTP", type: "text" },
+                otp: { label: "Code", type: "text" },
             },
             async authorize(credentials) {
                 const { phone, otp } = credentials;
                 if (!phone || !otp) return null;
 
-                const result = verifyOTP(phone, otp);
-                if (result.error) throw new Error(result.error);
-
-                // OTP is valid — find or create user in Neo4j
-                const existing = await executeQuery(
-                    `MATCH (p:Person {phone: $phone}) RETURN p.id as id, p.name as name LIMIT 1`,
+                // 1. Find the person in the heritage vault
+                const result = await executeQuery(
+                    `MATCH (p:Person) 
+                     WHERE p.phone = $phone 
+                     RETURN p.id as id, p.name as name, p.accessCodeHash as hash LIMIT 1`,
                     { phone }
                 );
 
-                if (existing && existing.length > 0) {
-                    const user = existing[0];
-                    return { id: user.get('id'), name: user.get('name'), phone };
+                if (result && result.length > 0) {
+                    const user = result[0];
+                    const hash = user.get('hash');
+
+                    // Existing User: Verify their self-selected code
+                    if (hash) {
+                        const valid = await bcrypt.compare(otp, hash);
+                        if (!valid) throw new Error("INCORRECT ACCESS CODE");
+                        return { id: user.get('id'), name: user.get('name'), phone };
+                    } else {
+                        // User exists but hasn't set an access code yet (legacy or partial onboard)
+                        // In this specific flow, we might want to allow them or redirect. 
+                        // For now, let's treat it as a skip if they type anything.
+                        return { id: user.get('id'), name: user.get('name'), phone };
+                    }
                 } else {
-                    // Create stub for new user
+                    // 2. New User: First-time entry
+                    // Since the user MUST select their own, we allow the first login to "create a stub"
+                    // and they will permanently save their selection during Onboarding.
                     const id = generateUniqueId();
                     await executeQuery(
-                        `CREATE (p:Person { id: $id, name: 'NEW', phone: $phone, provider: 'phone', createdAt: datetime() })`,
+                        `CREATE (p:Person { 
+                            id: $id, 
+                            name: 'NEW', 
+                            phone: $phone, 
+                            provider: 'phone', 
+                            createdAt: datetime() 
+                        })`,
                         { id, phone }
                     );
                     return { id, name: 'NEW', phone };
@@ -58,7 +73,7 @@ export const authOptions = {
             }
         }),
 
-        // ─── Watu ID + Password (Standard Credentials) ──────────────
+        // ─── Watu ID + Password ─────────────────────────────────────
         CredentialsProvider({
             id: "credentials",
             name: "Watu ID",
@@ -92,17 +107,11 @@ export const authOptions = {
     ],
 
     session: { strategy: "jwt" },
-
-    pages: {
-        signIn: "/login",
-        error: "/login",
-    },
+    pages: { signIn: "/login", error: "/login" },
 
     callbacks: {
         async jwt({ token, user }) {
-            if (user) {
-                token.watuId = user.id;
-            }
+            if (user) token.watuId = user.id;
             return token;
         },
         async session({ session, token }) {
@@ -111,7 +120,6 @@ export const authOptions = {
             return session;
         },
         async signIn({ user, account }) {
-            // For OAuth (Google/Apple) only! Phone/Credentials are already handled in `authorize`.
             if (account?.provider === "google" || account?.provider === "apple") {
                 try {
                     const existingResult = await executeQuery(

@@ -38,13 +38,13 @@ export default function OnboardPage() {
         birthOrder: '',
         isDeceased: false,
         password: '',
-        confirmPassword: '',
+        accessCode: '', // Added accessCode for 5-digit PIN
+        confirmCode: '',
     });
 
     const [registry, setRegistry] = useState([]);
     const [selectedTribeData, setSelectedTribeData] = useState(null);
 
-    // Initial Data Sync from Session
     useEffect(() => {
         if (status === 'authenticated' && session?.user) {
             const [first, ...rest] = (session.user.name || '').split(' ');
@@ -58,7 +58,6 @@ export default function OnboardPage() {
         }
     }, [status, session]);
 
-    // Fetch Clan Registry
     useEffect(() => {
         fetch('/api/clans/registry').then(res => res.json()).then(setRegistry).catch(console.error);
     }, []);
@@ -84,7 +83,9 @@ export default function OnboardPage() {
     };
 
     const handleSubmit = async () => {
-        if (formData.password && formData.password !== formData.confirmPassword) return alert("PASSWORDS DO NOT MATCH");
+        if (formData.accessCode.length !== 5) return alert("ACCESS CODE MUST BE 5 DIGITS");
+        if (formData.accessCode !== formData.confirmCode) return alert("ACCESS CODES DO NOT MATCH");
+
         setLoading(true);
         try {
             const res = await fetch('/api/onboard', {
@@ -108,7 +109,6 @@ export default function OnboardPage() {
         <div className="onboard-container">
             <div className="onboard-glass animate-fade-in">
 
-                {/* Progress Indicator */}
                 <div className="step-dots">
                     {[1, 2, 3].map(s => (
                         <div key={s} className={`dot ${step >= s ? 'active' : ''} ${step === s ? 'pulsing' : ''}`}></div>
@@ -167,7 +167,7 @@ export default function OnboardPage() {
                                 </div>
                             </div>
                             <div className="input-group">
-                                <label>EMAIL ADDRESS (REQUIRED FOR RECOVERY)</label>
+                                <label>EMAIL ADDRESS (RECOVERY)</label>
                                 <input name="email" value={formData.email} onChange={handleChange} placeholder="CONTACT@WATU.NETWORK" />
                             </div>
                             <button onClick={nextStep} className="btn-primary-cinematic">CONTINUE TO HERITAGE</button>
@@ -217,14 +217,30 @@ export default function OnboardPage() {
 
                     {step === 3 && (
                         <div className="step-container animate-slide-up">
-                            <p className="hint-text">CHOOSE A STRONG PIN OR PASSWORD TO SECURE YOUR VAULT.</p>
+                            <p className="hint-text">SELECT YOUR PERSONAL 5-DIGIT ACCESS CODE. THIS WILL SECURE YOUR MOBILE IDENTITY.</p>
                             <div className="input-group">
-                                <label>CREATE PASSWORD</label>
-                                <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••" />
+                                <label>CHOOSE 5-DIGIT ACCESS CODE</label>
+                                <input
+                                    type="password"
+                                    name="accessCode"
+                                    maxLength={5}
+                                    value={formData.accessCode}
+                                    onChange={(e) => setFormData(p => ({ ...p, accessCode: e.target.value.replace(/\D/g, '') }))}
+                                    placeholder="•••••"
+                                    className="otp-pin-input"
+                                />
                             </div>
                             <div className="input-group">
-                                <label>CONFIRM PASSWORD</label>
-                                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" />
+                                <label>CONFIRM ACCESS CODE</label>
+                                <input
+                                    type="password"
+                                    name="confirmCode"
+                                    maxLength={5}
+                                    value={formData.confirmCode}
+                                    onChange={(e) => setFormData(p => ({ ...p, confirmCode: e.target.value.replace(/\D/g, '') }))}
+                                    placeholder="•••••"
+                                    className="otp-pin-input"
+                                />
                             </div>
                             <div className="btn-row">
                                 <button onClick={() => setStep(2)} className="btn-secondary-onboard">BACK</button>
@@ -240,7 +256,7 @@ export default function OnboardPage() {
                             <div className="success-badge">✓</div>
                             <h2>{watuId}</h2>
                             <p>THIS IS YOUR UNIQUE IDENTITY KEY.</p>
-                            <p className="small">KEEP IT SAFE. USE IT TO CONNECT YOUR FAMILY MEMBERS.</p>
+                            <p className="small">USE YOUR 5-DIGIT ACCESS CODE TO LOG IN VIA MOBILE.</p>
                             <button onClick={() => router.push('/')} className="btn-primary-cinematic">ENTER THE NETWORK</button>
                         </div>
                     )}
@@ -254,17 +270,17 @@ export default function OnboardPage() {
                     align-items: center;
                     justify-content: center;
                     padding: 2rem;
-                    background: radial-gradient(circle at top right, #1e293b, #0f172a);
+                    background: radial-gradient(circle at top right, #1e293b, #0f172a, #020617);
                 }
                 .onboard-glass {
                     width: 100%;
                     max-width: 520px;
-                    background: rgba(15, 23, 42, 0.8);
+                    background: rgba(15, 23, 42, 0.9);
                     backdrop-filter: blur(40px);
-                    border: 1px solid rgba(255,255,255,0.1);
+                    border: 1px solid rgba(255,255,255,0.15);
                     border-radius: 32px;
                     padding: 3rem 2.5rem;
-                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
                     position: relative;
                 }
                 .step-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 2rem; }
@@ -282,8 +298,8 @@ export default function OnboardPage() {
                 
                 input, select, .main-input {
                     width: 100%;
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.1);
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid rgba(255,255,255,0.15);
                     border-radius: 16px;
                     padding: 1rem 1.25rem;
                     color: white;
@@ -291,14 +307,22 @@ export default function OnboardPage() {
                     outline: none;
                     transition: all 0.2s;
                 }
-                input:focus, select:focus, .main-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.05); }
+                input:focus, select:focus, .main-input:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); }
+
+                .otp-pin-input {
+                    font-size: 2rem !important;
+                    text-align: center;
+                    letter-spacing: 0.5em;
+                    font-weight: 900;
+                    color: var(--accent) !important;
+                }
 
                 .phone-wrapper { display: flex; gap: 12px; }
                 .country-selector {
                     position: relative;
-                    width: 140px;
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.1);
+                    width: 130px;
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid rgba(255,255,255,0.15);
                     border-radius: 16px;
                     overflow: hidden;
                 }
@@ -313,7 +337,7 @@ export default function OnboardPage() {
                     appearance: none;
                     cursor: pointer;
                 }
-                .selector-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; }
+                .selector-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: white; pointer-events: none; }
                 .main-input { flex: 1; }
 
                 .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -338,8 +362,7 @@ export default function OnboardPage() {
                 .btn-primary-cinematic:hover { transform: translateY(-2px); box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.6); }
 
                 .btn-row { display: flex; gap: 1rem; margin-top: 1rem; }
-                .btn-secondary-onboard { flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 18px; font-weight: 800; cursor: pointer; transition: all 0.2s; }
-                .btn-secondary-onboard:hover { background: rgba(255,255,255,0.05); }
+                .btn-secondary-onboard { flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 18px; font-weight: 800; cursor: pointer; transition: all 0.2s; }
 
                 .hint-text { font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-bottom: 2rem; line-height: 1.6; }
 

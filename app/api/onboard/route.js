@@ -11,7 +11,7 @@ export async function POST(request) {
             name, surname, thirdName, fourthName, maidenName, sex, email,
             phoneCode, phoneNumber,
             tribe, subTribe, clan, birthPlace, dob, birthOrder,
-            securityQuestion, securityAnswer, password,
+            password, accessCode, // Added accessCode
             isDeceased, deathYear, deathMonth
         } = await request.json();
 
@@ -25,22 +25,23 @@ export async function POST(request) {
         name = toTitleCase(trim(name));
         surname = toTitleCase(trim(surname));
         email = trim(email).toLowerCase();
-        phoneNumber = trim(phoneNumber).replace(/\s+/g, '');
+        phoneNumber = trim(phoneNumber).replace(/\s+/g, '').replace(/^0+/, '');
         phoneCode = trim(phoneCode) || '+254';
+        const fullPhone = phoneCode + phoneNumber;
 
         // 2. Strict Validation
-        if (!name || !surname || !sex || (!watuIdFromSession && !password)) {
+        if (!name || !surname || !sex || (!watuIdFromSession && !password && !accessCode)) {
             return Response.json({ error: 'Required identity fields are missing.' }, { status: 400 });
         }
 
-        // 3. Early Exit: Existence Check (Skip if existing user updating own profile)
+        // 3. Early Exit: Existence Check
         if (!watuIdFromSession) {
             const checkQuery = `
                 MATCH (p:Person) 
                 WHERE (p.email = $email AND $email <> "") OR (p.phone = $phone AND $phone <> "")
                 RETURN p.id LIMIT 1
             `;
-            const existing = await executeQuery(checkQuery, { email, phone: phoneNumber });
+            const existing = await executeQuery(checkQuery, { email, phone: fullPhone });
             if (existing.length > 0) {
                 return Response.json({ error: 'Identity already exists in the vault. Try signing in.' }, { status: 409 });
             }
@@ -51,12 +52,12 @@ export async function POST(request) {
         let attempts = 0;
         const maxAttempts = 5;
 
-        // 4. Persistence with Collision Retry (for new users)
+        // 4. Persistence
         while (attempts < maxAttempts) {
             if (!id) id = generateUniqueId();
             try {
                 const passwordHash = password ? await bcrypt.hash(password, 10) : "";
-                const securityAnswerHash = securityAnswer ? await bcrypt.hash(trim(securityAnswer).toLowerCase(), 10) : '';
+                const accessCodeHash = accessCode ? await bcrypt.hash(accessCode, 10) : "";
 
                 const query = watuIdFromSession ? `
                     MATCH (p:Person {id: $id})
@@ -69,6 +70,7 @@ export async function POST(request) {
                         sex: $sex,
                         phoneCode: $phoneCode,
                         phoneNumber: $phoneNumber,
+                        phone: $fullPhone,
                         tribe: $tribe,
                         subTribe: $subTribe,
                         clan: $clan,
@@ -82,6 +84,7 @@ export async function POST(request) {
                     }
                     ${email ? 'SET p.email = $email' : ''}
                     ${passwordHash ? 'SET p.passwordHash = $passwordHash' : ''}
+                    ${accessCodeHash ? 'SET p.accessCodeHash = $accessCodeHash' : ''}
                     RETURN p.id as id, p.name as name
                 ` : `
                     CREATE (p:Person {
@@ -95,6 +98,7 @@ export async function POST(request) {
                         email: $email,
                         phoneCode: $phoneCode,
                         phoneNumber: $phoneNumber,
+                        phone: $fullPhone,
                         tribe: $tribe,
                         subTribe: $subTribe,
                         clan: $clan,
@@ -102,6 +106,7 @@ export async function POST(request) {
                         dob: $dob,
                         birthOrder: $birthOrder,
                         passwordHash: $passwordHash,
+                        accessCodeHash: $accessCodeHash,
                         isCitizen: true,
                         isDeceased: $isDeceased,
                         deathYear: $deathYear,
@@ -116,7 +121,7 @@ export async function POST(request) {
                     thirdName: toTitleCase(trim(thirdName)),
                     fourthName: toTitleCase(trim(fourthName)),
                     maidenName: toTitleCase(trim(maidenName)),
-                    sex, email, phoneCode, phoneNumber,
+                    sex, email, phoneCode, phoneNumber, fullPhone,
                     tribe: toTitleCase(trim(tribe)),
                     subTribe: toTitleCase(trim(subTribe)),
                     clan: toTitleCase(trim(clan)),
@@ -130,34 +135,16 @@ export async function POST(request) {
                 if (result && result.length > 0) break;
             } catch (err) {
                 if (!watuIdFromSession && (err.message.includes('already exists') || err.message.includes('ConstraintValidationFailed'))) {
-                    console.warn(`ID collision detected for ${id}. Retrying...`);
                     attempts++;
-                    id = null; // force new id
+                    id = null;
                     continue;
                 }
                 throw err;
             }
-            if (watuIdFromSession) break; // No retry for updates
+            if (watuIdFromSession) break;
         }
 
-        if (!result || result.length === 0) {
-            throw new Error("Failed to process heritage claim in the vault.");
-        }
-
-        // Send Welcome Email
-        if (email && process.env.RESEND_API_KEY) {
-            try {
-                const resend = new Resend(process.env.RESEND_API_KEY);
-                await resend.emails.send({
-                    from: 'Watu Network <onboarding@watu.network>',
-                    to: email,
-                    subject: 'Account Secured - Your Watu ID',
-                    html: `<h2>Welcome, ${name}!</h2><p>Your ID: <strong>${id}</strong></p>`
-                });
-            } catch (emailErr) {
-                console.error('Email failed:', emailErr);
-            }
-        }
+        if (!result || result.length === 0) throw new Error("Failed to process heritage claim.");
 
         return Response.json({
             success: true,

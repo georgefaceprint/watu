@@ -87,7 +87,7 @@ export default function LoginPage() {
                         <div className="brand-logo">W</div>
                         <div className="orbit-ring"></div>
                     </div>
-                    <h1>Watu<span className="accent-text">.Network</span></h1>
+                    <h1><span className="brand-watu">Watu</span><span className="accent-text">.Network</span></h1>
                     <p className="subtitle">ANCESTRAL IDENTITY GATEWAY</p>
                 </div>
 
@@ -207,17 +207,17 @@ export default function LoginPage() {
                     align-items: center;
                     justify-content: center;
                     padding: 2rem;
-                    background: radial-gradient(circle at top right, #1e293b, #0f172a);
+                    background: radial-gradient(circle at top right, #1e293b, #0f172a, #020617);
                 }
                 .auth-glass-container {
                     width: 100%;
                     max-width: 480px;
-                    background: rgba(15, 23, 42, 0.8);
+                    background: rgba(15, 23, 42, 0.9);
                     backdrop-filter: blur(40px);
-                    border: 1px solid rgba(255,255,255,0.1);
+                    border: 1px solid rgba(255,255,255,0.15);
                     border-radius: 32px;
                     padding: 3rem 2.5rem;
-                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
                     position: relative;
                     overflow: hidden;
                 }
@@ -225,6 +225,7 @@ export default function LoginPage() {
                     text-align: center;
                     margin-bottom: 3rem;
                 }
+                .brand-watu { color: #ffffff; }
                 .brand-orbit {
                     width: 64px;
                     height: 64px;
@@ -279,11 +280,13 @@ export default function LoginPage() {
                 .country-selector {
                     position: relative;
                     width: 130px;
-                    background: rgba(0, 0, 0, 0.4);
+                    background: rgba(255, 255, 255, 0.08);
                     border: 1px solid rgba(255, 255, 255, 0.2);
                     border-radius: 16px;
                     overflow: hidden;
+                    transition: all 0.2s;
                 }
+                .country-selector:hover { background: rgba(255, 255, 255, 0.12); }
                 .country-selector select {
                     width: 100%;
                     height: 100%;
@@ -292,32 +295,36 @@ export default function LoginPage() {
                     border: none;
                     color: #ffffff;
                     font-size: 1rem;
-                    font-weight: 600;
+                    font-weight: 700;
                     appearance: none;
                     cursor: pointer;
                 }
                 .country-selector select option {
-                    background: #0f172a;
+                    background: #1e293b;
                     color: white;
                 }
-                .selector-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; }
+                .selector-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #ffffff; pointer-events: none; opacity: 0.7; }
 
                 .main-input {
                     flex: 1;
-                    background: rgba(0, 0, 0, 0.4);
+                    background: rgba(255, 255, 255, 0.05);
                     border: 1px solid rgba(255, 255, 255, 0.2);
                     border-radius: 16px;
-                    padding: 1rem 1.25rem;
+                    padding: 1.1rem 1.25rem;
                     color: #ffffff;
-                    font-size: 1.1rem;
-                    font-weight: 600;
+                    font-size: 1.2rem;
+                    font-weight: 800;
                     outline: none;
                     transition: all 0.2s;
                 }
                 .main-input::placeholder {
-                    color: rgba(255, 255, 255, 0.4);
+                    color: rgba(255, 255, 255, 0.3);
                 }
-                .main-input:focus { border-color: var(--accent); background: rgba(0, 0, 0, 0.6); }
+                .main-input:focus { 
+                    border-color: var(--accent); 
+                    background: rgba(255, 255, 255, 0.1);
+                    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+                }
 
                 .btn-primary-cinematic {
                     width: 100%;
