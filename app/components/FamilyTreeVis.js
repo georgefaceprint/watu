@@ -10,6 +10,7 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
     const svgRef = useRef(null);
     const gRef = useRef(null);
     const containerRef = useRef(null);
+    const zoomRef = useRef(null);
     const [dimensions, setDimensions] = useState({ width: 0, height: 800 });
 
     useEffect(() => {
@@ -71,8 +72,10 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
             gRef.current = svg.append("g");
 
             const zoom = d3.zoom()
-                .scaleExtent([0.2, 1.5])
+                .scaleExtent([0.1, 2])
                 .on("zoom", (event) => gRef.current.attr("transform", event.transform));
+
+            zoomRef.current = zoom;
             svg.call(zoom);
         }
 
@@ -256,16 +259,22 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
 
         // ─── AUTO-ALIGN & CENTER VIEW ────────────────────────
         const focusNodeLayout = visibleNodes.find(n => n.id === currentFocusId);
-        const initialScale = width < 768 ? 0.45 : 0.7; // Tighter fit for mobile
+        const isMobile = width < 768;
+        const initialScale = isMobile ? 0.4 : 0.8;
+
+        // Add a vertical offset to account for the "LINEAGE EXPLORER" overlay at the top
+        const verticalOffset = isMobile ? 0 : 50;
 
         // Calculate translation to put focus node in center
         const tx = focusNodeLayout ? (width / 2) - (focusNodeLayout.x * initialScale) : width / 2;
-        const ty = focusNodeLayout ? (height / 2) - (focusNodeLayout.y * initialScale) : height / 2;
+        const ty = focusNodeLayout ? (height / 2) - (focusNodeLayout.y * initialScale) + verticalOffset : height / 2;
 
-        svg.transition(t).call(
-            d3.zoom().transform,
-            d3.zoomIdentity.translate(tx, ty).scale(initialScale)
-        );
+        if (zoomRef.current) {
+            svg.transition(t).call(
+                zoomRef.current.transform,
+                d3.zoomIdentity.translate(tx, ty).scale(initialScale)
+            );
+        }
 
     }, [data, focusId, dimensions]);
 

@@ -65,49 +65,64 @@ export default function HomePage() {
     }, [session]);
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: '3rem', paddingBottom: '100px' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
             {/* Tree Section - FULL CINEMATIC LAYOUT */}
-            <section style={{ width: '100%', padding: '0', marginTop: '0' }}>
-                <div style={{ position: 'relative', minHeight: '800px' }}>
+            <section style={{ width: '100%', padding: '0', position: 'relative', flex: 1 }}>
+                <div style={{ position: 'relative', height: '100%' }}>
+                    {/* Floating Info Overlay */}
                     <div style={{
                         position: 'absolute',
-                        top: '4rem',
-                        left: '4rem',
+                        top: isMobile ? '1rem' : '3rem',
+                        left: isMobile ? '1rem' : '3rem',
                         zIndex: 20,
                         pointerEvents: 'none',
-                        maxWidth: '400px'
+                        maxWidth: isMobile ? '200px' : '400px'
                     }}>
-                        <h2 style={{ fontSize: '2.5rem', color: '#fff', marginBottom: '1rem', letterSpacing: '-0.02em' }}>LINEAGE EXPLORER</h2>
-                        <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.6)', lineHeight: '1.6' }}>
-                            MAPPING THE WATU.NETWORK CLAN BRANCHES. <br />
-                            DISCOVER CONNECTIONS SECURED IN THE GLOBAL HERITAGE ARCHIVE.
-                        </p>
+                        <h2 style={{
+                            fontSize: isMobile ? '1.5rem' : '2.5rem',
+                            color: 'var(--foreground)',
+                            marginBottom: '0.5rem',
+                            letterSpacing: '-0.02em',
+                            textShadow: '0 2px 10px var(--background)'
+                        }}>LINEAGE EXPLORER</h2>
+                        {!isMobile && (
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                                MAPPING THE WATU.NETWORK CLAN BRANCHES. <br />
+                                DISCOVER CONNECTIONS SECURED IN THE GLOBAL HERITAGE ARCHIVE.
+                            </p>
+                        )}
                     </div>
 
+                    {/* Search Overlay */}
                     <div style={{
                         position: 'absolute',
-                        top: '4rem',
-                        right: '4rem',
+                        top: isMobile ? 'auto' : '3rem',
+                        bottom: isMobile ? '85px' : 'auto',
+                        right: isMobile ? '1rem' : '3rem',
+                        left: isMobile ? '1rem' : 'auto',
                         zIndex: 20,
                         display: 'flex',
-                        gap: '12px'
+                        gap: '8px'
                     }}>
                         <input
                             className="search-input"
-                            placeholder="SEARCH WATU ID..."
+                            placeholder="FIND WATU ID..."
                             value={searchId}
                             onChange={e => setSearchId(e.target.value)}
                             style={{
-                                background: 'rgba(15, 23, 42, 0.8)',
+                                background: 'var(--card)',
                                 backdropFilter: 'blur(20px)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                color: '#fff',
-                                width: '250px'
+                                border: '1px solid var(--border)',
+                                color: 'var(--foreground)',
+                                flex: isMobile ? 1 : 'none',
+                                width: isMobile ? 'auto' : '250px',
+                                boxShadow: 'var(--shadow-glow)'
                             }}
                         />
                         <button
                             className="btn-primary"
                             onClick={() => fetchTree(searchId)}
+                            style={{ padding: isMobile ? '0.75rem 1.25rem' : '0.85rem 1.5rem' }}
                             disabled={loadingTree}
                         >
                             {loadingTree ? '...' : 'SCAN'}
@@ -128,29 +143,40 @@ export default function HomePage() {
             {/* Premium CTA Section */}
             <section style={{
                 width: '100%',
-                maxWidth: '800px',
-                margin: '2rem auto',
-                padding: '0 1.5rem'
+                maxWidth: '900px',
+                margin: '4rem auto',
+                padding: '0 1.5rem',
+                paddingBottom: '100px'
             }}>
                 <div style={{
-                    padding: '2.5rem',
-                    background: 'linear-gradient(135deg, #1e1b4b 0%, #0c0a09 100%)',
+                    padding: '3rem',
+                    background: 'var(--card)',
                     borderRadius: 'var(--radius-lg)',
-                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    border: '1px solid var(--border)',
                     textAlign: 'center',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                    position: 'relative',
+                    overflow: 'hidden'
                 }}>
-                    <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔒</div>
-                    <h2 style={{ fontSize: '1.75rem', color: '#fff' }}>Protect Your Heritage</h2>
-                    <p style={{ color: '#94a3b8', marginBottom: '2rem', fontSize: '1rem' }}>
-                        Join over 10,000 clans worldwide. Ensure your family's future legacy is as secure as their history.
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '4px',
+                        background: 'linear-gradient(to right, var(--accent), var(--accent-secondary))'
+                    }} />
+                    <div style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>🛡️</div>
+                    <h2 style={{ fontSize: '1.75rem', color: 'var(--foreground)', marginBottom: '1rem' }}>Secure Your Heritage</h2>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto 2rem auto' }}>
+                        Join a global network of clans protecting their lineage and legacy through secure connection and verification.
                     </p>
-                    <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <a href="/onboard" style={{ color: '#818cf8', fontWeight: '600' }}>
-                            Join Familia Network &rarr;
+                    <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <a href="/onboard" className="btn-primary" style={{ textDecoration: 'none' }}>
+                            Join Watu Network
                         </a>
-                        <a href="/events" style={{ color: '#818cf8', fontWeight: '600' }}>
-                            Join Community Events &rarr;
+                        <a href="/events" className="btn-secondary" style={{ textDecoration: 'none' }}>
+                            Explore Events
                         </a>
                     </div>
                 </div>
