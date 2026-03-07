@@ -1,37 +1,53 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 
 /**
- * RESPONSIVE FOCUS-FLOW: Premium Family Heritage UI
- * Optimized for both Mobile (Touch) and Desktop (Web)
+ * ULTRA-RESPONSIVE FOCUS-FLOW
+ * Specifically engineered for Mobile Touch & Desktop Web fluidity
  */
 export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
     const svgRef = useRef(null);
     const gRef = useRef(null);
     const containerRef = useRef(null);
     const zoomRef = useRef(null);
-    const [dimensions, setDimensions] = useState({ width: 0, height: 800 });
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
+    // ─── DIMENSION MANAGEMENT ───────────────────────────
     useEffect(() => {
         const updateDims = () => {
             if (containerRef.current) {
                 setDimensions({
-                    width: containerRef.current.offsetWidth,
-                    height: window.innerHeight * 0.85
+                    width: containerRef.current.clientWidth,
+                    height: containerRef.current.clientHeight || window.innerHeight * 0.75
                 });
             }
         };
         updateDims();
-        const resizeObserver = new ResizeObserver(updateDims);
-        if (containerRef.current) resizeObserver.observe(containerRef.current);
         window.addEventListener('resize', updateDims);
-        return () => {
-            resizeObserver.disconnect();
-            window.removeEventListener('resize', updateDims);
-        };
+        return () => window.removeEventListener('resize', updateDims);
     }, []);
 
+    // ─── RECENTER UTILITY ──────────────────────────────
+    const recenter = useCallback(() => {
+        if (!zoomRef.current || !svgRef.current || dimensions.width === 0) return;
+        const svg = d3.select(svgRef.current);
+        const g = d3.select(gRef.current);
+
+        // Find focus node in the global DOM if possible, or use the layout coordinates
+        const focusNode = g.selectAll(".node").filter(d => d.id === focusId).data()[0];
+        if (!focusNode) return;
+
+        const isMobile = dimensions.width < 768;
+        const scale = isMobile ? 0.35 : 0.65;
+        const x = (dimensions.width / 2) - (focusNode.x * scale);
+        const y = (dimensions.height / 2) - (focusNode.y * scale);
+
+        svg.transition().duration(1000).ease(d3.easeCubicInOut)
+            .call(zoomRef.current.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+    }, [focusId, dimensions]);
+
+    // ─── MAIN D3 RENDERER ──────────────────────────────
     useEffect(() => {
         if (!data || !data.nodes || data.nodes.length === 0 || dimensions.width === 0) return;
 
@@ -39,295 +55,237 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         const { width, height } = dimensions;
         const isMobile = width < 768;
 
-        // ─── ADAPTIVE SIZES ──────────────────────────────────
-        const cardW = isMobile ? 220 : 280;
-        const cardH = isMobile ? 280 : 360;
-        const gapY = isMobile ? 350 : 450;
-        const gapX = isMobile ? 60 : 100;
+        // Adaptive Layout Config
+        const cardW = isMobile ? 180 : 260;
+        const cardH = isMobile ? 240 : 340;
+        const gapY = isMobile ? 320 : 450;
+        const gapX = isMobile ? 40 : 100;
 
-        // ─── INIT SVG ───────────────────────────────────────
+        // Initialize SVG once
         if (!gRef.current) {
             svg.selectAll("*").remove();
 
             const defs = svg.append("defs");
-
-            // Glow Definition
-            const filter = defs.append("filter")
-                .attr("id", "glow")
-                .attr("x", "-50%")
-                .attr("y", "-50%")
-                .attr("width", "200%")
-                .attr("height", "200%");
-            filter.append("feGaussianBlur")
-                .attr("stdDeviation", "15")
-                .attr("result", "coloredBlur");
-            const feMerge = filter.append("feMerge");
-            feMerge.append("feMergeNode").attr("in", "coloredBlur");
-            feMerge.append("feMergeNode").attr("in", "SourceGraphic");
-
-            // Background Dots
             const pattern = defs.append("pattern")
-                .attr("id", "dots")
-                .attr("width", 50)
-                .attr("height", 50)
+                .attr("id", "grid")
+                .attr("width", 40)
+                .attr("height", 40)
                 .attr("patternUnits", "userSpaceOnUse");
             pattern.append("circle")
                 .attr("cx", 2)
                 .attr("cy", 2)
                 .attr("r", 1)
-                .attr("fill", "var(--border)");
+                .attr("fill", "rgba(255,255,255,0.05)");
 
             svg.append("rect")
                 .attr("width", "100%")
                 .attr("height", "100%")
-                .attr("fill", "url(#dots)");
+                .attr("fill", "url(#grid)");
 
-            gRef.current = svg.append("g");
+            gRef.current = svg.append("g").attr("class", "main-group");
 
             const zoom = d3.zoom()
-                .scaleExtent([0.1, 2])
-                .on("zoom", (event) => gRef.current.attr("transform", event.transform));
+                .scaleExtent([0.1, 3])
+                .on("zoom", (event) => d3.select(gRef.current).attr("transform", event.transform));
 
             zoomRef.current = zoom;
-            svg.call(zoom);
+            svg.call(zoom).on("dblclick.zoom", null); // Disable double click zoom globally
         }
 
-        const g = gRef.current;
+        const g = d3.select(gRef.current);
         const nodes = data.nodes.map(n => ({ ...n }));
         const links = data.links.map(l => ({ ...l }));
         const nodeMap = new Map(nodes.map(n => [n.id, n]));
-        const focusNode = nodeMap.get(focusId) || nodes[0];
-        const currentFocusId = focusNode?.id;
+        const currFocusId = focusId || (nodes[0]?.id);
 
-        if (!currentFocusId) return;
+        if (!currFocusId) return;
 
-        // ─── DYNAMIC GENERATIONAL MAPPING (BFS) ──────────────
-        const queue = [{ id: currentFocusId, gen: 0 }];
-        const visited = new Set([currentFocusId]);
-        const nodeGenMap = { [currentFocusId]: 0 };
+        // BFS to build generational layout
+        const queue = [{ id: currFocusId, gen: 0 }];
+        const visited = new Set([currFocusId]);
+        const nodeGenMap = { [currFocusId]: 0 };
 
         while (queue.length > 0) {
             const { id, gen } = queue.shift();
             links.forEach(l => {
-                let neighborId = null;
-                let nextGen = gen;
+                let neb = null, ngen = gen;
                 if (l.source === id) {
-                    neighborId = l.target;
-                    if (l.type === 'CHILD_OF') nextGen = gen - 1;
-                    else if (l.type === 'PARENT_OF') nextGen = gen + 1;
-                    else nextGen = gen;
+                    neb = l.target;
+                    ngen = l.type === 'CHILD_OF' ? gen - 1 : (l.type === 'PARENT_OF' ? gen + 1 : gen);
                 } else if (l.target === id) {
-                    neighborId = l.source;
-                    if (l.type === 'CHILD_OF') nextGen = gen + 1;
-                    else if (l.type === 'PARENT_OF') nextGen = gen - 1;
-                    else nextGen = gen;
+                    neb = l.source;
+                    ngen = l.type === 'CHILD_OF' ? gen + 1 : (l.type === 'PARENT_OF' ? gen - 1 : gen);
                 }
-                if (neighborId && !visited.has(neighborId)) {
-                    visited.add(neighborId);
-                    nodeGenMap[neighborId] = nextGen;
-                    queue.push({ id: neighborId, gen: nextGen });
+                if (neb && !visited.has(neb)) {
+                    visited.add(neb);
+                    nodeGenMap[neb] = ngen;
+                    queue.push({ id: neb, gen: ngen });
                 }
             });
         }
 
         const levels = {};
         nodes.forEach(n => {
-            const gen = nodeGenMap[n.id];
-            if (gen !== undefined) {
-                n.level = gen;
-                if (!levels[gen]) levels[gen] = [];
-                levels[gen].push(n);
-            } else {
-                n.level = 99;
-            }
+            const l = nodeGenMap[n.id];
+            if (l !== undefined) {
+                n.level = l;
+                if (!levels[l]) levels[l] = [];
+                levels[l].push(n);
+            } else n.level = 999;
         });
 
-        const visibleLinks = links.filter(l => nodeMap.get(l.source)?.level !== 99 && nodeMap.get(l.target)?.level !== 99);
-
-        // Position nodes
-        const sortedLevels = Object.keys(levels).map(Number).sort((a, b) => a - b);
-        sortedLevels.forEach(lvl => {
-            const nodesInLvl = levels[lvl];
-            const totalWidth = nodesInLvl.length * (cardW + gapX) - gapX;
-            nodesInLvl.forEach((n, i) => {
-                n.x = (i * (cardW + gapX)) - (totalWidth / 2);
-                n.y = lvl * gapY;
+        // Compute Horizontal Positions
+        Object.keys(levels).forEach(lvl => {
+            const group = levels[lvl];
+            const tw = group.length * (cardW + gapX) - gapX;
+            group.forEach((n, i) => {
+                n.x = (i * (cardW + gapX)) - (tw / 2);
+                n.y = n.level * gapY;
             });
         });
 
-        const visibleNodes = nodes.filter(n => n.level !== 99);
-        const t = d3.transition().duration(800).ease(d3.easeCubicInOut);
+        const vNodes = nodes.filter(n => n.level !== 999);
+        const vLinks = links.filter(l => nodeMap.get(l.source)?.level !== 999 && nodeMap.get(l.target)?.level !== 999);
+        const trans = d3.transition().duration(1000).ease(d3.easeCubicInOut);
 
-        // ─── RENDERING ───────────────────────────────────────
-        const link = g.selectAll(".link").data(visibleLinks, d => `${d.source}-${d.target}`);
-        link.exit().transition(t).style("opacity", 0).remove();
-        const linkEnter = link.enter().append("path")
-            .attr("class", "link")
-            .attr("fill", "none")
-            .attr("stroke", "var(--accent)")
-            .attr("stroke-width", 2)
-            .style("opacity", 0);
+        // Render Links
+        const link = g.selectAll(".tree-link").data(vLinks, d => `${d.source}-${d.target}`);
+        link.exit().remove();
+        const linkEnter = link.enter().append("path").attr("class", "tree-link").attr("fill", "none").attr("stroke", "#818cf8").attr("stroke-width", 2).style("opacity", 0);
+        link.merge(linkEnter).transition(trans).style("opacity", 0.4).attr("d", d => {
+            const s = nodeMap.get(d.source), t = nodeMap.get(d.target);
+            if (!s || !t) return "";
+            const mid = (s.y + t.y) / 2;
+            return `M ${s.x},${s.y} C ${s.x},${mid} ${t.x},${mid} ${t.x},${t.y}`;
+        });
 
-        link.merge(linkEnter).transition(t)
-            .style("opacity", 0.3)
-            .attr("d", d => {
-                const s = nodeMap.get(d.source);
-                const t = nodeMap.get(d.target);
-                if (!s || !t) return "";
-                const midY = (s.y + t.y) / 2;
-                return `M ${s.x},${s.y} C ${s.x},${midY} ${t.x},${midY} ${t.x},${t.y}`;
-            });
-
-        const node = g.selectAll(".node").data(visibleNodes, d => d.id);
-        node.exit().transition(t).style("opacity", 0).remove();
-
+        // Render Nodes
+        const node = g.selectAll(".node").data(vNodes, d => d.id);
+        node.exit().remove();
         const nodeEnter = node.enter().append("foreignObject")
             .attr("class", "node")
-            .attr("width", cardW)
-            .attr("height", cardH)
-            .attr("x", d => d.x - cardW / 2)
-            .attr("y", d => d.y - cardH / 2)
+            .attr("width", cardW).attr("height", cardH)
+            .attr("x", d => d.x - cardW / 2).attr("y", d => d.y - cardH / 2)
             .style("opacity", 0)
             .on("click", (e, d) => onNodeClick && onNodeClick(d));
 
-        nodeEnter.append("xhtml:div")
-            .attr("class", d => `person-card ${d.id === (focusId || currentFocusId) ? 'active' : ''} ${d.isDeceased ? 'deceased' : ''}`)
-            .html(d => `
-                <div class="card-glass"></div>
-                <div class="card-content">
-                    <div class="avatar-container">
-                        ${d.photo ? `<img src="${d.photo}" class="avatar-img" />` : `<div class="avatar-fallback">${d.sex === 'female' ? '👩' : '👨'}</div>`}
-                    </div>
-                    <div class="card-info">
-                        <span class="rel-label">${d.id === (focusId || currentFocusId) ? 'FOCUS' : (d.tribe || 'RELATIVE')}</span>
-                        <h3 class="name">${d.name}</h3>
-                        <h4 class="surname">${d.surname || ''}</h4>
-                    </div>
+        nodeEnter.append("xhtml:div").attr("class", "card-wrapper").html(d => `
+            <div class="p-card ${d.id === currFocusId ? 'active' : ''} ${d.isDeceased ? 'deceased' : ''}">
+                <div class="p-avatar">
+                   ${d.photo ? `<img src="${d.photo}" />` : `<span>${d.sex === 'female' ? '👩' : '👨'}</span>`}
                 </div>
-            `);
+                <div class="p-meta">
+                   <span class="p-tag">${d.id === currFocusId ? 'FOCUS' : (d.tribe || 'RELATIVE')}</span>
+                   <h3 class="p-name">${d.name}</h3>
+                   <span class="p-surname">${d.surname || ''}</span>
+                </div>
+            </div>
+        `);
 
-        const nodeUpdate = node.merge(nodeEnter);
-
-        nodeUpdate.each(function (d) {
-            if (d.id === (focusId || currentFocusId)) d3.select(this).raise();
-        });
-
-        nodeUpdate.transition(t)
+        node.merge(nodeEnter).transition(trans)
             .style("opacity", 1)
-            .attr("width", cardW)
-            .attr("height", cardH)
-            .attr("x", d => d.x - cardW / 2)
-            .attr("y", d => d.y - cardH / 2);
+            .attr("width", cardW).attr("height", cardH)
+            .attr("x", d => d.x - cardW / 2).attr("y", d => d.y - cardH / 2);
 
-        // ─── VIEWPORT FOCUS ──────────────────────────────────
-        const focusNodeLayout = visibleNodes.find(n => n.id === (focusId || currentFocusId));
-        const initialScale = isMobile ? 0.45 : 0.75;
-        const tx = focusNodeLayout ? (width / 2) - (focusNodeLayout.x * initialScale) : width / 2;
-        const ty = focusNodeLayout ? (height / 2) - (focusNodeLayout.y * initialScale) : height / 2;
+        // Initial Auto-Center
+        recenter();
 
-        if (zoomRef.current) {
-            svg.transition(t).call(
-                zoomRef.current.transform,
-                d3.zoomIdentity.translate(tx, ty).scale(initialScale)
-            );
-        }
-
-    }, [data, focusId, dimensions]);
-
-    const handleZoom = (delta) => {
-        if (!svgRef.current || !zoomRef.current) return;
-        const svg = d3.select(svgRef.current);
-        svg.transition().duration(300).call(zoomRef.current.scaleBy, delta);
-    };
+    }, [data, focusId, dimensions, recenter]);
 
     return (
-        <div ref={containerRef} className="tree-container">
-            <svg ref={svgRef} className="tree-svg"></svg>
+        <div ref={containerRef} className="viz-viewport">
+            <svg ref={svgRef} className="viz-svg"></svg>
 
-            {/* Minimal Zoom Controls */}
-            <div className="zoom-controls">
-                <button onClick={() => handleZoom(1.3)}>+</button>
-                <button onClick={() => handleZoom(0.7)}>−</button>
+            <div className="viz-hud">
+                <button title="Recenter" onClick={recenter} className="hud-btn">🎯</button>
+                <button title="Zoom In" onClick={() => handleZoom(1.4)} className="hud-btn">+</button>
+                <button title="Zoom Out" onClick={() => handleZoom(0.7)} className="hud-btn">−</button>
             </div>
 
             <style jsx>{`
-                .tree-container {
-                    width: 100%;
-                    height: ${dimensions.height}px;
-                    background: #0f172a;
-                    position: relative;
-                    overflow: hidden;
-                    touch-action: none;
-                }
-                .tree-svg { width: 100%; height: 100%; cursor: grab; }
-                .tree-svg:active { cursor: grabbing; }
-
-                .person-card {
+                .viz-viewport {
                     width: 100%;
                     height: 100%;
-                    padding: 1rem;
-                    background: rgba(30, 41, 59, 0.7);
+                    min-height: 80vh;
+                    background: #020617;
+                    position: relative;
+                    touch-action: none;
+                }
+                .viz-svg { width: 100%; height: 100%; cursor: grab; }
+                .viz-svg:active { cursor: grabbing; }
+
+                .viz-hud {
+                    position: absolute;
+                    bottom: 30px;
+                    right: 30px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    z-index: 100;
+                }
+                .hud-btn {
+                    width: 52px;
+                    height: 52px;
+                    border-radius: 16px;
+                    background: rgba(30, 41, 59, 0.9);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    color: white;
+                    font-size: 1.5rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    backdrop-filter: blur(10px);
+                    transition: all 0.2s;
+                    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+                }
+                .hud-btn:hover { background: #818cf8; transform: translateY(-2px); }
+
+                .card-wrapper { width: 100%; height: 100%; padding: 10px; pointer-events: none; }
+                .p-card {
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(15, 23, 42, 0.8);
                     backdrop-filter: blur(20px);
                     border: 1px solid rgba(255,255,255,0.1);
-                    border-radius: 20px;
+                    border-radius: 24px;
+                    padding: 20px;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     text-align: center;
-                    transition: all 0.3s;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    pointer-events: auto;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 }
-                .person-card:hover { border-color: var(--accent); transform: translateY(-5px); box-shadow: 0 15px 40px rgba(99, 102, 241, 0.2); }
-                .person-card.active { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 30px rgba(99, 102, 241, 0.3); }
-                .person-card.deceased { filter: grayscale(1) opacity(0.7); }
+                .p-card.active { border-color: #818cf8; border-width: 2px; box-shadow: 0 0 40px rgba(129, 140, 248, 0.3); }
+                .p-card:hover { transform: scale(1.05); border-color: #818cf8; }
+                .p-card.deceased { opacity: 0.6; filter: grayscale(0.8); }
 
-                .avatar-container {
-                    width: 100%;
+                .p-avatar {
+                    width: 70%;
                     aspect-ratio: 1;
-                    max-width: 120px;
-                    background: rgba(0,0,0,0.2);
-                    border-radius: 12px;
-                    margin-bottom: 1rem;
+                    border-radius: 18px;
+                    background: rgba(255,255,255,0.05);
+                    margin-bottom: 20px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     overflow: hidden;
-                }
-                .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-                .avatar-fallback { font-size: 3rem; }
-
-                .rel-label { font-size: 0.6rem; font-weight: 900; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
-                .name { font-size: 1.1rem; font-weight: 800; color: white; margin: 0; line-height: 1.2; }
-                .surname { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-top: 2px; text-transform: uppercase; }
-
-                .zoom-controls {
-                    position: absolute;
-                    bottom: 2rem;
-                    right: 2rem;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                    z-index: 50;
-                }
-                .zoom-controls button {
-                    width: 44px;
-                    height: 44px;
-                    border-radius: 12px;
-                    background: rgba(30, 41, 59, 0.8);
                     border: 1px solid rgba(255,255,255,0.1);
-                    color: white;
-                    font-size: 1.25rem;
-                    cursor: pointer;
-                    backdrop-filter: blur(10px);
-                    transition: all 0.2s;
                 }
-                .zoom-controls button:hover { background: var(--accent); border-color: var(--accent); }
+                .p-avatar img { width: 100%; height: 100%; object-fit: cover; }
+                .p-avatar span { font-size: 44px; }
+
+                .p-tag { font-size: 10px; font-weight: 900; color: #818cf8; letter-spacing: 2px; margin-bottom: 8px; }
+                .p-name { font-size: 1.25rem; font-weight: 900; color: white; margin: 0; line-height: 1.1; }
+                .p-surname { font-size: 0.85rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-top: 4px; }
 
                 @media (max-width: 768px) {
-                    .zoom-controls { bottom: 1.5rem; right: 1.5rem; }
-                    .zoom-controls button { width: 40px; height: 40px; }
-                    .name { font-size: 1rem; }
-                    .person-card { padding: 0.75rem; }
+                    .viz-hud { bottom: 100px; right: 20px; }
+                    .hud-btn { width: 48px; height: 48px; font-size: 1.25rem; border-radius: 12px; }
+                    .p-card { padding: 15px; }
+                    .p-name { font-size: 1rem; }
+                    .p-avatar span { font-size: 32px; }
                 }
             `}</style>
         </div>
