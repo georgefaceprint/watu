@@ -271,12 +271,13 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         // ─── AUTO-ALIGN & CENTER VIEW ────────────────────────
         const focusNodeLayout = visibleNodes.find(n => n.id === currentFocusId);
         const isMobile = width < 768;
-        const initialScale = isMobile ? 0.4 : 0.8;
+        const initialScale = isMobile ? 0.5 : 0.8;
 
-        // Add a vertical offset to account for the "LINEAGE EXPLORER" overlay at the top
-        const verticalOffset = isMobile ? 0 : 50;
+        // Add a vertical offset to account for the "LINEAGE EXPLORER" overlay at the top:
+        // More offset for desktop to clear the top overlays, less for mobile.
+        const verticalOffset = isMobile ? 20 : 80;
 
-        // Calculate translation to put focus node in center
+        // Calculate translation needed to place focus node exactly in the middle
         const tx = focusNodeLayout ? (width / 2) - (focusNodeLayout.x * initialScale) : width / 2;
         const ty = focusNodeLayout ? (height / 2) - (focusNodeLayout.y * initialScale) + verticalOffset : height / 2;
 
