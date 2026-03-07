@@ -236,6 +236,17 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                         </div>
                         <h3 class="name">${d.name}</h3>
                         <h4 class="surname">${d.surname}</h4>
+                        
+                        ${d.id === currentFocusId
+                    ? `<div class="focus-indicator">
+                                <span class="pulse-dot"></span>
+                                ACTIVE FOCUS
+                               </div>`
+                    : `<button class="focus-btn">
+                                MAKE FOCUS
+                               </button>`
+                }
+
                         <div class="meta-data">
                             <span>ID: ${d.id}</span>
                             <span>GEN: ${d.level === 0 ? 'CORE' : (d.level > 0 ? '+' + d.level : d.level)}</span>
@@ -320,11 +331,12 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 }
                 .person-card.active {
                     border-color: var(--accent);
-                    border-width: 2px;
-                    box-shadow: 0 0 60px rgba(99, 102, 241, 0.5);
+                    border-width: 3px;
+                    box-shadow: 0 0 80px var(--shadow-glow);
+                    transform: scale(1.02);
                 }
                 .person-card.deceased {
-                    filter: grayscale(0.8) contrast(1.2);
+                    filter: grayscale(0.8) contrast(1.1) brightness(0.9);
                 }
                 .card-glass {
                     position: absolute;
@@ -382,8 +394,48 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                 .status-tag { font-size: 10px; font-weight: 800; color: var(--text-secondary); background: var(--accent-muted); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); }
                 
                 .name { font-size: 22px; color: var(--foreground); font-weight: 800; margin: 0; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.02em; }
-                .surname { font-size: 14px; color: var(--accent); font-weight: 700; margin: 6px 0 20px 0; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; }
+                .surname { font-size: 14px; color: var(--accent); font-weight: 700; margin: 6px 0 16px 0; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; }
                 
+                .focus-btn {
+                    width: 100%;
+                    padding: 10px;
+                    background: var(--accent-muted);
+                    border: 1px solid var(--border);
+                    color: var(--accent);
+                    border-radius: 8px;
+                    font-size: 11px;
+                    font-weight: 800;
+                    letter-spacing: 0.05em;
+                    transition: all 0.3s;
+                    margin-bottom: 4px;
+                }
+                .focus-btn:hover {
+                    background: var(--accent);
+                    color: #fff;
+                    box-shadow: var(--shadow-glow);
+                }
+
+                .focus-indicator {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    font-size: 11px;
+                    font-weight: 800;
+                    color: var(--accent);
+                    letter-spacing: 0.1em;
+                    margin: 12px 0;
+                }
+                .pulse-dot {
+                    width: 6px;
+                    height: 6px;
+                    background: var(--accent);
+                    border-radius: 50%;
+                    box-shadow: 0 0 10px var(--accent);
+                    animation: glow1 1s infinite;
+                }
+                @keyframes glow1 { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
                 .meta-data { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); font-weight: 700; border-top: 1px solid var(--border); padding-top: 16px; margin-top: auto; }
                 
                 .card-accents .corner { position: absolute; width: 15px; height: 15px; border: 2px solid var(--accent); opacity: 0; transition: all 0.4s ease; }
