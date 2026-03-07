@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 
@@ -24,21 +24,21 @@ export default function LoginPage() {
     // ── Phone Auth ──
     const [phoneCode, setPhoneCode] = useState('+254');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [otpSent, setOtpSent] = useState(false);
+    const [isExistingUser, setIsExistingUser] = useState(null); // null, true, false
     const [otp, setOtp] = useState('');
     const [devOtp, setDevOtp] = useState('');
 
     // ── Watu ID Auth ──
     const [id, setId] = useState('');
     const [password, setPassword] = useState('');
-    const [showRecovery, setShowRecovery] = useState(false);
 
-    // ── Handlers ──
-    const handleSendOtp = async () => {
+    const handleCheckUser = async () => {
         if (!phoneNumber) { setError('ENTER MOBILE NUMBER'); return; }
         setLoading(true); setError('');
         const fullPhone = phoneCode + phoneNumber.replace(/^0+/, '');
         try {
+            // Check if user exists and send OTP if they DON'T have an access code yet
+            // or just verification if they are new.
             const res = await fetch('/api/auth/phone', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -46,20 +46,22 @@ export default function LoginPage() {
             });
             const data = await res.json();
             if (data.error) throw new Error(data.error);
-            setOtpSent(true);
+
+            setIsExistingUser(data.exists);
             if (data.devOtp) setDevOtp(data.devOtp);
         } catch (err) { setError(err.message); }
         finally { setLoading(false); }
     };
 
-    const handleVerifyOtp = async () => {
+    const handleVerify = async () => {
         if (!otp || otp.length < 5) { setError('ENTER 5-DIGIT CODE'); return; }
         setLoading(true); setError('');
         const fullPhone = phoneCode + phoneNumber.replace(/^0+/, '');
         try {
             const res = await signIn('phone', { phone: fullPhone, otp, redirect: false });
             if (res?.error) throw new Error(res.error);
-            localStorage.setItem('watu_id', fullPhone); // Temporary or just for local reference
+
+            // If new user, they might need to go to onboard
             router.push('/');
         } catch (err) { setError(err.message); }
         finally { setLoading(false); }
@@ -71,7 +73,6 @@ export default function LoginPage() {
         try {
             const res = await signIn('credentials', { id: id.toUpperCase(), password, redirect: false });
             if (res?.error) throw new Error('INVALID WATU ID OR PASSWORD');
-            localStorage.setItem('watu_id', id.toUpperCase());
             router.push('/');
         } catch (err) { setError(err.message); }
         finally { setLoading(false); }
@@ -81,7 +82,6 @@ export default function LoginPage() {
         <div className="auth-outer-container">
             <div className="auth-glass-container animate-fade-in">
 
-                {/* Brand Header */}
                 <div className="auth-header">
                     <div className="brand-orbit">
                         <div className="brand-logo">W</div>
@@ -96,10 +96,9 @@ export default function LoginPage() {
                 )}
 
                 <div className="auth-content">
-                    {/* PHONE FLOW */}
                     {mode === 'phone' && (
                         <div className="flow-container">
-                            {!otpSent ? (
+                            {isExistingUser === null ? (
                                 <>
                                     <div className="input-group">
                                         <label>MOBILE IDENTITY</label>
@@ -119,37 +118,37 @@ export default function LoginPage() {
                                             />
                                         </div>
                                     </div>
-                                    <button onClick={handleSendOtp} disabled={loading} className="btn-primary-cinematic">
-                                        {loading ? 'RELAYING...' : 'GET 5-DIGIT ACCESS CODE'}
+                                    <button onClick={handleCheckUser} disabled={loading} className="btn-primary-cinematic">
+                                        {loading ? 'CHECKING...' : 'CONTINUE'}
                                     </button>
                                 </>
                             ) : (
                                 <div className="otp-flow">
                                     <div className="input-group">
-                                        <label>VERIFY 5-DIGIT CODE</label>
+                                        <label>{isExistingUser ? 'ENTER YOUR 5-DIGIT ACCESS CODE' : 'VERIFICATION CODE SENT'}</label>
                                         <div className="otp-input-container">
                                             <input
-                                                type="text"
+                                                type="password"
                                                 maxLength={5}
                                                 placeholder="•••••"
                                                 value={otp}
                                                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                                                 className="otp-input"
+                                                autoFocus
                                             />
-                                            {devOtp && <div className="dev-otp">🔐 DEV CODE: {devOtp}</div>}
+                                            {devOtp && <div className="dev-otp">🔐 VERIFICATION CODE: {devOtp}</div>}
                                         </div>
-                                        <p className="hint">SENT TO {phoneCode} {phoneNumber}</p>
+                                        <p className="hint">PHONE: {phoneCode} {phoneNumber}</p>
                                     </div>
-                                    <button onClick={handleVerifyOtp} disabled={loading} className="btn-primary-cinematic">
+                                    <button onClick={handleVerify} disabled={loading} className="btn-primary-cinematic">
                                         {loading ? 'VERIFYING...' : 'CONFIRM IDENTITY'}
                                     </button>
-                                    <button onClick={() => setOtpSent(false)} className="btn-link">CHANGE NUMBER</button>
+                                    <button onClick={() => setIsExistingUser(null)} className="btn-link">BACK TO PHONE</button>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* SOCIAL FLOW */}
                     {mode === 'social' && (
                         <div className="flow-container animate-fade-in">
                             <div className="social-grid">
@@ -166,28 +165,25 @@ export default function LoginPage() {
                         </div>
                     )}
 
-                    {/* WATU ID FLOW */}
                     {mode === 'watuId' && (
                         <form onSubmit={handleWatuLogin} className="flow-container animate-fade-in">
                             <div className="input-group">
-                                <label>WATU ID / PIN</label>
+                                <label>WATU ID</label>
                                 <input placeholder="W-XXXX-XXXX" value={id} onChange={(e) => setId(e.target.value)} className="main-input" required />
                             </div>
                             <div className="input-group">
-                                <label>SECURITY CHIP (PASSWORD)</label>
+                                <label>PASSWORD</label>
                                 <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="main-input" required />
                             </div>
                             <button type="submit" disabled={loading} className="btn-primary-cinematic">
                                 {loading ? 'DECRYPTING...' : 'DECRYPT VAULT ACCESS'}
                             </button>
-                            <button type="button" onClick={() => setShowRecovery(true)} className="btn-link">LOST IDENTITY?</button>
                         </form>
                     )}
                 </div>
 
-                {/* Perspective Switcher */}
                 <div className="perspective-switcher">
-                    <button onClick={() => setMode('phone')} className={mode === 'phone' ? 'active' : ''}>PHONE</button>
+                    <button onClick={() => { setMode('phone'); setIsExistingUser(null); }} className={mode === 'phone' ? 'active' : ''}>PHONE</button>
                     <div className="divider"></div>
                     <button onClick={() => setMode('social')} className={mode === 'social' ? 'active' : ''}>SOCIAL</button>
                     <div className="divider"></div>
@@ -199,7 +195,6 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {/* Custom Styles */}
             <style jsx>{`
                 .auth-outer-container {
                     min-height: 100vh;
@@ -212,48 +207,31 @@ export default function LoginPage() {
                 .auth-glass-container {
                     width: 100%;
                     max-width: 480px;
-                    background: rgba(30, 41, 59, 0.85); /* Lightened from indigo-900 */
+                    background: rgba(30, 41, 59, 0.85);
                     backdrop-filter: blur(40px);
-                    border: 1px solid rgba(255, 255, 255, 0.25); /* Stronger border */
+                    border: 1px solid rgba(255, 255, 255, 0.25);
                     border-radius: 32px;
                     padding: 3.5rem 2.5rem;
                     box-shadow: 0 0 80px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.2);
                     position: relative;
                     overflow: hidden;
                 }
-                .auth-header {
-                    text-align: center;
-                    margin-bottom: 3rem;
-                }
+                .auth-header { text-align: center; margin-bottom: 3rem; }
                 .brand-watu { color: #ffffff; }
-                .brand-orbit {
-                    width: 64px;
-                    height: 64px;
-                    margin: 0 auto 1.5rem auto;
-                    position: relative;
-                }
+                .brand-orbit { width: 64px; height: 64px; margin: 0 auto 1.5rem auto; position: relative; }
                 .brand-logo {
-                    width: 100%;
-                    height: 100%;
+                    width: 100%; height: 100%;
                     background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
                     border-radius: 18px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 32px;
-                    font-weight: 900;
-                    color: white;
-                    z-index: 2;
-                    position: relative;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 32px; font-weight: 900; color: white;
+                    z-index: 2; position: relative;
                     box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
                 }
                 .orbit-ring {
-                    position: absolute;
-                    inset: -8px;
-                    border: 1px solid var(--accent);
-                    border-radius: 22px;
-                    opacity: 0.3;
-                    animation: rotate 10s linear infinite;
+                    position: absolute; inset: -8px;
+                    border: 1px solid var(--accent); border-radius: 22px;
+                    opacity: 0.3; animation: rotate 10s linear infinite;
                 }
                 @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
@@ -278,83 +256,50 @@ export default function LoginPage() {
                 
                 .phone-wrapper { display: flex; gap: 12px; }
                 .country-selector {
-                    position: relative;
-                    width: 130px;
+                    position: relative; width: 130px;
                     background: rgba(255, 255, 255, 0.08);
                     border: 1px solid rgba(255, 255, 255, 0.2);
-                    border-radius: 16px;
-                    overflow: hidden;
+                    border-radius: 16px; overflow: hidden;
                     transition: all 0.2s;
                 }
                 .country-selector:hover { background: rgba(255, 255, 255, 0.12); }
                 .country-selector select {
-                    width: 100%;
-                    height: 100%;
-                    padding: 0 32px 0 16px;
-                    background: transparent;
-                    border: none;
-                    color: #ffffff;
-                    font-size: 1rem;
-                    font-weight: 700;
-                    appearance: none;
-                    cursor: pointer;
+                    width: 100%; height: 100%; padding: 0 32px 0 16px;
+                    background: transparent; border: none; color: #ffffff;
+                    font-size: 1rem; font-weight: 700; appearance: none; cursor: pointer;
                 }
-                .country-selector select option {
-                    background: #1e293b;
-                    color: white;
-                }
+                .country-selector select option { background: #1e293b; color: white; }
                 .selector-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #ffffff; pointer-events: none; opacity: 0.7; }
 
-                 .main-input {
-                    flex: 1;
-                    background: rgba(255, 255, 255, 0.1);
+                .main-input {
+                    flex: 1; background: rgba(255, 255, 255, 0.1);
                     border: 1px solid rgba(255, 255, 255, 0.3);
-                    border-radius: 16px;
-                    padding: 1.1rem 1.25rem;
-                    color: #ffffff;
-                    font-size: 1.2rem;
-                    font-weight: 800;
-                    outline: none;
-                    transition: all 0.2s;
+                    border-radius: 16px; padding: 1.1rem 1.25rem;
+                    color: #ffffff; font-size: 1.2rem; font-weight: 800;
+                    outline: none; transition: all 0.2s;
                     box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
                 }
-                .main-input::placeholder {
-                    color: rgba(255, 255, 255, 0.5);
-                }
+                .main-input::placeholder { color: rgba(255, 255, 255, 0.5); }
                 .main-input:focus { 
-                    border-color: #818cf8; 
-                    background: rgba(255, 255, 255, 0.15);
+                    border-color: #818cf8; background: rgba(255, 255, 255, 0.15);
                     box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2), inset 0 2px 4px rgba(0,0,0,0.1);
                 }
 
                 .btn-primary-cinematic {
-                    width: 100%;
-                    padding: 1.1rem;
+                    width: 100%; padding: 1.1rem;
                     background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-                    border: none;
-                    border-radius: 18px;
-                    color: white;
-                    font-weight: 900;
-                    letter-spacing: 0.05em;
-                    cursor: pointer;
+                    border: none; border-radius: 18px; color: white; font-weight: 900;
+                    letter-spacing: 0.05em; cursor: pointer;
                     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                     box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
                 }
                 .btn-primary-cinematic:hover { transform: translateY(-2px); box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.6); }
-                .btn-primary-cinematic:active { transform: scale(0.98); }
 
                 .otp-input {
-                    background: transparent;
-                    border: none;
-                    border-bottom: 2px solid var(--accent);
-                    width: 100%;
-                    text-align: center;
-                    font-size: 2.5rem;
-                    letter-spacing: 0.5em;
-                    color: #ffffff;
-                    font-weight: 900;
-                    outline: none;
-                    padding: 1rem 0;
+                    background: transparent; border: none; border-bottom: 2px solid #818cf8;
+                    width: 100%; text-align: center; font-size: 2.5rem;
+                    letter-spacing: 0.5em; color: #ffffff; font-weight: 900;
+                    outline: none; padding: 1rem 0;
                 }
                 .otp-input::placeholder { color: rgba(255, 255, 255, 0.2); }
                 .hint { font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin-top: 1rem; }
@@ -362,56 +307,34 @@ export default function LoginPage() {
 
                 .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
                 .btn-social {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 12px;
-                    padding: 1rem;
-                    border-radius: 18px;
-                    border: 1px solid rgba(255,255,255,0.1);
-                    background: rgba(255,255,255,0.03);
-                    color: white;
-                    font-weight: 800;
-                    font-size: 0.8rem;
-                    cursor: pointer;
-                    transition: all 0.2s;
+                    display: flex; align-items: center; justify-content: center; gap: 12px;
+                    padding: 1rem; border-radius: 18px; border: 1px solid rgba(255,255,255,0.1);
+                    background: rgba(255,255,255,0.03); color: white; font-weight: 800; font-size: 0.8rem;
+                    cursor: pointer; transition: all 0.2s;
                 }
                 .btn-social:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
                 .btn-social img, .btn-social svg { width: 20px; height: 20px; }
                 .btn-social.apple { background: white; color: black; border: none; }
 
                 .perspective-switcher {
-                    display: flex;
-                    justify-content: space-between;
-                    background: rgba(0,0,0,0.2);
-                    padding: 0.5rem;
-                    border-radius: 20px;
-                    margin-top: 3rem;
+                    display: flex; justify-content: space-between;
+                    background: rgba(0,0,0,0.2); padding: 0.5rem;
+                    border-radius: 20px; margin-top: 3rem;
                     border: 1px solid rgba(255,255,255,0.05);
                 }
                 .perspective-switcher button {
-                    flex: 1;
-                    padding: 0.6rem;
-                    border: none;
-                    background: transparent;
-                    color: var(--text-secondary);
-                    font-weight: 800;
-                    font-size: 0.65rem;
-                    cursor: pointer;
-                    border-radius: 14px;
-                    transition: all 0.3s;
+                    flex: 1; padding: 0.6rem; border: none; background: transparent;
+                    color: var(--text-secondary); font-weight: 800; font-size: 0.65rem;
+                    cursor: pointer; border-radius: 14px; transition: all 0.3s;
                 }
                 .perspective-switcher button.active {
-                    background: rgba(255,255,255,0.05);
-                    color: white;
+                    background: rgba(255,255,255,0.05); color: white;
                     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
                 }
                 .divider { width: 1px; background: rgba(255,255,255,0.05); margin: 0.5rem 0; }
-
-                .btn-link { background: none; border: none; color: var(--accent); font-size: 0.75rem; font-weight: 800; margin-top: 1.5rem; cursor: pointer; display: block; width: 100%; text-align: center; }
-
+                .btn-link { background: none; border: none; color: #818cf8; font-size: 0.75rem; font-weight: 800; margin-top: 1.5rem; cursor: pointer; display: block; width: 100%; text-align: center; }
                 .auth-footer { text-align: center; margin-top: 3rem; font-size: 0.85rem; color: var(--text-secondary); }
-                .auth-footer a { color: var(--accent); font-weight: 800; text-decoration: none; }
+                .auth-footer a { color: #818cf8; font-weight: 800; text-decoration: none; }
             `}</style>
         </div>
     );

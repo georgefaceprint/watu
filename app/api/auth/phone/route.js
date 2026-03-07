@@ -1,6 +1,7 @@
 import { setOTP, generateOTPHelper } from '@/lib/otp';
+import { executeQuery } from '@/lib/neo4j';
 
-// POST /api/auth/phone — Send OTP
+// POST /api/auth/phone — Check User & Send Verification if New
 export async function POST(request) {
     const { phone } = await request.json();
 
@@ -8,31 +9,40 @@ export async function POST(request) {
         return Response.json({ error: 'Phone number is required' }, { status: 400 });
     }
 
-    // ─── SEND MODE ───
-    const otp = generateOTPHelper(5); // 5 digits as requested
-    setOTP(phone, otp, 10); // 10 minutes
+    // 1. Check if user exists in the heritage vault
+    const result = await executeQuery(
+        `MATCH (p:Person) WHERE p.phone = $phone RETURN p.id as id, p.accessCodeHash as hash LIMIT 1`,
+        { phone }
+    );
 
-    // Try sending via Twilio if configured
-    if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE) {
-        try {
-            const twilio = require('twilio');
-            const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-            await client.messages.create({
-                body: `Your Watu.Network identity code: ${otp}. Valid for 10 minutes. Do not share.`,
-                from: process.env.TWILIO_PHONE,
-                to: phone,
-            });
-        } catch (err) {
-            console.error('Twilio SMS Error:', err.message);
+    const exists = result && result.length > 0;
+    const hasPin = exists && !!result[0].get('hash');
+
+    let response = { success: true, exists: hasPin };
+
+    // 2. If it's a NEW user (no PIN set), send a verification code
+    if (!hasPin) {
+        const otp = generateOTPHelper(5);
+        setOTP(phone, otp, 10); // 10 minutes
+
+        // Try sending via Twilio
+        if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE) {
+            try {
+                const twilio = require('twilio');
+                const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+                await client.messages.create({
+                    body: `Your Watu.Network verification code: ${otp}.`,
+                    from: process.env.TWILIO_PHONE,
+                    to: phone,
+                });
+            } catch (err) {
+                console.error('Twilio SMS Error:', err.message);
+            }
+        } else {
+            console.log(`\n🔐 [WATU VERIFICATION] Phone: ${phone} → Code: ${otp}\n`);
+            response.devOtp = otp;
         }
-    } else {
-        // Development mode — log OTP to console
-        console.log(`\n🔐 [WATU DEV OTP] Phone: ${phone} → Code: ${otp}\n`);
     }
 
-    return Response.json({
-        success: true,
-        message: 'OTP sent',
-        ...((!process.env.TWILIO_ACCOUNT_SID) && { devOtp: otp })
-    });
+    return Response.json(response);
 }

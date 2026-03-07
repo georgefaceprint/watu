@@ -4,6 +4,7 @@ import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { executeQuery } from "@/lib/neo4j";
 import { generateUniqueId } from "@/lib/utils";
+import { verifyOTP } from "@/lib/otp";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
@@ -18,7 +19,7 @@ export const authOptions = {
             clientSecret: process.env.APPLE_SECRET,
         })] : []),
 
-        // ─── Phone + Self-Selected 5-Digit Code ─────────────────────
+        // ─── Unified Phone Provider (Verification OR Access Code) ───
         CredentialsProvider({
             id: "phone",
             name: "Phone Access",
@@ -30,7 +31,7 @@ export const authOptions = {
                 const { phone, otp } = credentials;
                 if (!phone || !otp) return null;
 
-                // 1. Find the person in the heritage vault
+                // 1. Check if user exists and has a permanent PIN
                 const result = await executeQuery(
                     `MATCH (p:Person) 
                      WHERE p.phone = $phone 
@@ -38,42 +39,42 @@ export const authOptions = {
                     { phone }
                 );
 
-                if (result && result.length > 0) {
-                    const user = result[0];
-                    const hash = user.get('hash');
+                const existingUser = result && result.length > 0;
+                const hash = existingUser ? result[0].get('hash') : null;
 
-                    // Existing User: Verify their self-selected code
-                    if (hash) {
-                        const valid = await bcrypt.compare(otp, hash);
-                        if (!valid) throw new Error("INCORRECT ACCESS CODE");
-                        return { id: user.get('id'), name: user.get('name'), phone };
-                    } else {
-                        // User exists but hasn't set an access code yet (legacy or partial onboard)
-                        // In this specific flow, we might want to allow them or redirect. 
-                        // For now, let's treat it as a skip if they type anything.
-                        return { id: user.get('id'), name: user.get('name'), phone };
-                    }
+                if (hash) {
+                    // ── Case A: Returning User (Verify Permanent PIN) ──
+                    const valid = await bcrypt.compare(otp, hash);
+                    if (!valid) throw new Error("INCORRECT ACCESS CODE");
+                    return { id: result[0].get('id'), name: result[0].get('name'), phone };
                 } else {
-                    // 2. New User: First-time entry
-                    // Since the user MUST select their own, we allow the first login to "create a stub"
-                    // and they will permanently save their selection during Onboarding.
-                    const id = generateUniqueId();
-                    await executeQuery(
-                        `CREATE (p:Person { 
-                            id: $id, 
-                            name: 'NEW', 
-                            phone: $phone, 
-                            provider: 'phone', 
-                            createdAt: datetime() 
-                        })`,
-                        { id, phone }
-                    );
-                    return { id, name: 'NEW', phone };
+                    // ── Case B: New User (Verify Temporary OTP) ──
+                    const validOtp = verifyOTP(phone, otp);
+                    if (!validOtp) throw new Error("INVALID VERIFICATION CODE");
+
+                    if (existingUser) {
+                        // User exists but has no PIN yet
+                        return { id: result[0].get('id'), name: result[0].get('name'), phone };
+                    } else {
+                        // Brand new "stub" creation
+                        const id = generateUniqueId();
+                        await executeQuery(
+                            `CREATE (p:Person { 
+                                id: $id, 
+                                name: 'NEW', 
+                                phone: $phone, 
+                                provider: 'phone', 
+                                createdAt: datetime() 
+                            })`,
+                            { id, phone }
+                        );
+                        return { id, name: 'NEW', phone };
+                    }
                 }
             }
         }),
 
-        // ─── Watu ID + Password ─────────────────────────────────────
+        // ─── Watu ID + Password ──────────────────────────────────────
         CredentialsProvider({
             id: "credentials",
             name: "Watu ID",
@@ -90,7 +91,7 @@ export const authOptions = {
                     { id: id.toUpperCase() }
                 );
 
-                if (!result || result.length === 0) return null;
+                if (!result || result.length === 0) throw new Error("IDENTITY NOT FOUND");
 
                 const userNode = result[0].get("p");
                 const user = userNode.properties;
