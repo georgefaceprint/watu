@@ -1,113 +1,90 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+
+const COUNTRY_CODES = [
+    { code: '+254', flag: '🇰🇪', name: 'Kenya' },
+    { code: '+255', flag: '🇹🇿', name: 'Tanzania' },
+    { code: '+256', flag: '🇺🇬', name: 'Uganda' },
+    { code: '+250', flag: '🇷🇼', name: 'Rwanda' },
+    { code: '+251', flag: '🇪🇹', name: 'Ethiopia' },
+    { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
+    { code: '+27', flag: '🇿🇦', name: 'South Africa' },
+    { code: '+44', flag: '🇬🇧', name: 'UK' },
+    { code: '+1', flag: '🇺🇸', name: 'USA' },
+];
 
 export default function OnboardPage() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
     const [step, setStep] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const [watuId, setWatuId] = useState(null);
+
     const [formData, setFormData] = useState({
         name: '',
         surname: '',
         thirdName: '',
         fourthName: '',
-        maidenName: '',
-        email: '',
         sex: '',
+        email: '',
         phoneCode: '+254',
         phoneNumber: '',
-        dob: '',
-        birthOrder: '',
-        birthPlace: '',
         tribe: '',
         subTribe: '',
         clan: '',
-        securityQuestion: '',
-        securityAnswer: '',
+        birthPlace: '',
+        birthOrder: '',
+        isDeceased: false,
         password: '',
         confirmPassword: '',
-        isDeceased: false,
-        deathYear: '',
-        deathMonth: '',
     });
-
-    const countryCodes = [
-        { code: '+254', flag: '🇰🇪', name: 'Kenya' },
-        { code: '+27', flag: '🇿🇦', name: 'South Africa' },
-        { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
-        { code: '+255', flag: '🇹🇿', name: 'Tanzania' },
-        { code: '+256', flag: '🇺🇬', name: 'Uganda' },
-        { code: '+250', flag: '🇷🇼', name: 'Rwanda' },
-        { code: '+251', flag: '🇪🇹', name: 'Ethiopia' },
-        { code: '+44', flag: '🇬🇧', name: 'UK' },
-        { code: '+1', flag: '🇺🇸', name: 'USA' },
-    ];
 
     const [registry, setRegistry] = useState([]);
     const [selectedTribeData, setSelectedTribeData] = useState(null);
 
+    // Initial Data Sync from Session
     useEffect(() => {
-        const fetchRegistry = async () => {
-            try {
-                const res = await fetch('/api/clans/registry');
-                const data = await res.json();
-                setRegistry(data);
-            } catch (err) {
-                console.error("Failed to fetch clan registry", err);
-            }
-        };
-        fetchRegistry();
+        if (status === 'authenticated' && session?.user) {
+            const [first, ...rest] = (session.user.name || '').split(' ');
+            setFormData(prev => ({
+                ...prev,
+                name: prev.name || first || '',
+                surname: prev.surname || rest.join(' ') || '',
+                email: prev.email || session.user.email || '',
+                phoneNumber: prev.phoneNumber || session.user.phone || ''
+            }));
+        }
+    }, [status, session]);
+
+    // Fetch Clan Registry
+    useEffect(() => {
+        fetch('/api/clans/registry').then(res => res.json()).then(setRegistry).catch(console.error);
     }, []);
 
     useEffect(() => {
-        if (formData.tribe) {
-            const tribe = registry.find(t => t.name === formData.tribe);
-            setSelectedTribeData(tribe || null);
-        } else {
-            setSelectedTribeData(null);
-        }
+        const tribe = registry.find(t => t.name === formData.tribe);
+        setSelectedTribeData(tribe || null);
     }, [formData.tribe, registry]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        if (name === 'tribe') {
-            setFormData(prev => ({ ...prev, tribe: value, subTribe: '' }));
-        } else {
-            setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    };
+
+    const nextStep = () => {
+        if (step === 1) {
+            if (!formData.name || !formData.surname || !formData.sex) return alert("CORE IDENTITY FIELDS REQUIRED");
+            setStep(2);
+        } else if (step === 2) {
+            if (!formData.tribe) return alert("PLEASE SELECT YOUR TRIBE");
+            setStep(3);
         }
     };
 
-    const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState(null);
-    const [watuId, setWatuId] = useState(null); // New state for Watu ID
-    const router = useRouter();
-    const { data: session, status } = useSession();
-
-    // Force next boarding after signed in
-    useEffect(() => {
-        if (status === 'authenticated' && session?.user && step === 1) {
-            const [firstName, ...rest] = (session.user.name || '').split(' ');
-            const lastName = rest.join(' ');
-
-            setFormData(prev => ({
-                ...prev,
-                name: prev.name || firstName || '',
-                surname: prev.surname || lastName || '',
-                email: prev.email || session.user.email || ''
-            }));
-
-            // If we have name and sex, we could force step 2
-            // For now, we stay on step 1 to ensure biological sex is picked
-        }
-    }, [status, session, step]);
-
-    const handleSubmit = async (e) => {
-        if (e) e.preventDefault();
-        const isSocial = status === 'authenticated';
-
-        if (!isSocial && formData.password !== formData.confirmPassword) {
-            alert("Passwords do not match");
-            return;
-        }
+    const handleSubmit = async () => {
+        if (formData.password && formData.password !== formData.confirmPassword) return alert("PASSWORDS DO NOT MATCH");
         setLoading(true);
         try {
             const res = await fetch('/api/onboard', {
@@ -117,14 +94,9 @@ export default function OnboardPage() {
             });
             const data = await res.json();
             if (data.error) throw new Error(data.error);
-            setResult(data);
-            if (data.id) {
-                setWatuId(data.id);
-                localStorage.setItem('watu_id', data.id); // Store for profile page
-                setStep(4); // Step 4 = Success screen
-            } else {
-                setStep(4); // Fallback
-            }
+            setWatuId(data.id);
+            localStorage.setItem('watu_id', data.id);
+            setStep(4);
         } catch (err) {
             alert(err.message);
         } finally {
@@ -133,403 +105,206 @@ export default function OnboardPage() {
     };
 
     return (
-        <div className="container" style={{ minHeight: 'calc(100vh - 160px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="glass animate-fade-in" style={{ width: '100%', maxWidth: '550px', padding: '2.5rem' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.75rem', color: 'var(--foreground)' }}>Onboard to Watu.Network</h2>
+        <div className="onboard-container">
+            <div className="onboard-glass animate-fade-in">
 
-                <div style={{ marginBottom: '2.5rem' }}>
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem', justifyContent: 'center' }}>
-                        {[1, 2, 3].map(s => (
-                            <div key={s} style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '10px',
-                                background: step >= s ? 'linear-gradient(135deg, var(--accent), var(--accent-secondary))' : 'rgba(0,0,0,0.08)',
-                                color: step >= s ? 'white' : 'var(--text-secondary)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '0.9rem',
-                                fontWeight: '800',
-                                border: step >= s ? 'none' : '1px solid var(--border)',
-                                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                transform: step === s ? 'scale(1.15)' : 'scale(1)',
-                                boxShadow: step === s ? 'var(--shadow-glow)' : 'none'
-                            }}>
-                                {s}
-                            </div>
-                        ))}
-                    </div>
-                    {/* Progress Bar */}
-                    <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
-                        <div style={{
-                            width: `${Math.min((step / 3) * 100, 100)}%`,
-                            height: '100%',
-                            background: 'linear-gradient(to right, var(--accent), var(--accent-secondary))',
-                            transition: 'width 0.6s cubic-bezier(0.65, 0, 0.35, 1)',
-                            borderRadius: '10px'
-                        }} />
-                    </div>
+                {/* Progress Indicator */}
+                <div className="step-dots">
+                    {[1, 2, 3].map(s => (
+                        <div key={s} className={`dot ${step >= s ? 'active' : ''} ${step === s ? 'pulsing' : ''}`}></div>
+                    ))}
                 </div>
 
-                {step === 1 && (
-                    <div className="animate-fade-in">
-                        <h3 style={stepTitle}>1. CORE IDENTITY</h3>
+                <div className="onboard-header">
+                    <h1>{step === 4 ? 'IDENTITY SECURED' : 'CLAIM YOUR IDENTITY'}</h1>
+                    <p className="subtitle">
+                        {step === 1 && 'STEP 1: CORE BIOLOGICAL IDENTITY'}
+                        {step === 2 && 'STEP 2: ANCESTRAL ROOTS'}
+                        {step === 3 && 'STEP 3: SECURE VAULT ACCESS'}
+                        {step === 4 && 'WELCOME TO THE NETWORK'}
+                    </p>
+                </div>
 
-                        {/* SOCIAL START OPTIONS */}
-                        <div style={{ marginBottom: '2rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                                <button onClick={() => signIn('google', { callbackUrl: '/onboard' })} className="social-auth-btn" style={{ fontSize: '0.7rem', padding: '0.75rem', opacity: status === 'authenticated' ? 0.5 : 1 }}>
-                                    <svg width="18" height="18" viewBox="0 0 48 48">
-                                        <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-4z" />
-                                        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.6 8.3 6.3 14.7z" />
-                                        <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3-11.3-7.3L6 33.5C9.3 39.7 16.1 44 24 44z" />
-                                        <path fill="#1565C0" d="M43.6 20H24v8h11.3c-.8 2.3-2.4 4.2-4.4 5.5l6.2 5.2C41.4 35.3 44 30 44 24c0-1.3-.1-2.7-.4-4z" />
-                                    </svg>
-                                    <span>{status === 'authenticated' ? 'VERIFIED' : 'GOOGLE'}</span>
-                                </button>
-                                <button onClick={() => signIn('apple', { callbackUrl: '/onboard' })} className="social-auth-btn" style={{ fontSize: '0.7rem', padding: '0.75rem', background: '#fff', color: '#000', opacity: status === 'authenticated' ? 0.5 : 1 }}>
-                                    <svg width="18" height="18" viewBox="0 0 814 1000">
-                                        <path fill="currentColor" d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.7 268.8-317.7 99.8 0 183 65.8 245.3 65.8 59.2 0 152-69.1 271.5-69.1zm-17.2-159.1c-49.3 0-121.4-33.2-170.4-82.1-43.1-43.4-82.5-115.3-82.5-187.2 0-9.5.8-19 2.3-27.3h2.3c54.8 0 136.2 37.2 185.6 91.5 44.5 49.7 80.8 120.8 80.8 192.6 0 9.5-1.5 19-2.3 27.3-2.3.3-6.7 1.3-15.8-15z" />
-                                    </svg>
-                                    <span>{status === 'authenticated' ? 'VERIFIED' : 'APPLE'}</span>
-                                </button>
+                <div className="onboard-content">
+                    {step === 1 && (
+                        <div className="step-container animate-slide-up">
+                            <div className="input-row">
+                                <div className="input-group">
+                                    <label>BIOLOGICAL SEX</label>
+                                    <div className="sex-toggle">
+                                        <button onClick={() => setFormData(p => ({ ...p, sex: 'male' }))} className={formData.sex === 'male' ? 'active' : ''}>MALE</button>
+                                        <button onClick={() => setFormData(p => ({ ...p, sex: 'female' }))} className={formData.sex === 'female' ? 'active' : ''}>FEMALE</button>
+                                    </div>
+                                </div>
                             </div>
-                            {status === 'authenticated' && (
-                                <p style={{ fontSize: '0.7rem', color: 'var(--accent)', textAlign: 'center', marginTop: '10px', fontWeight: 'bold' }}>
-                                    CONNECTED AS {session.user.email}
-                                </p>
-                            )}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '1rem 0' }}>
-                                <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 'bolder' }}>{status === 'authenticated' ? 'CONTINUE BELOW' : 'OR USE MANUAL ENTRY'}</span>
-                                <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
+                            <div className="input-grid">
+                                <div className="input-group">
+                                    <label>GIVEN NAME</label>
+                                    <input name="name" value={formData.name} onChange={handleChange} placeholder="FIRST NAME" />
+                                </div>
+                                <div className="input-group">
+                                    <label>SURNAME</label>
+                                    <input name="surname" value={formData.surname} onChange={handleChange} placeholder="FAMILY NAME" />
+                                </div>
                             </div>
+                            <div className="input-group">
+                                <label>EMAIL ADDRESS (REQUIRED FOR RECOVERY)</label>
+                                <input name="email" value={formData.email} onChange={handleChange} placeholder="CONTACT@WATU.NETWORK" />
+                            </div>
+                            <button onClick={nextStep} className="btn-primary-cinematic">CONTINUE TO HERITAGE</button>
                         </div>
+                    )}
 
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>ENTER YOUR BIOLOGICAL SEX AND LEGAL NAMES TO BEGIN YOUR ANCESTRAL MAPPING.</p>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>SEX</label>
-                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <label className="glass" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '1rem', border: formData.sex === 'male' ? '2px solid var(--accent)' : '1px solid var(--border)', background: formData.sex === 'male' ? 'var(--accent-muted)' : 'transparent' }}>
-                                        <input type="radio" name="sex" value="male" checked={formData.sex === 'male'} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
-                                        <span style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--foreground)' }}>MALE</span>
-                                    </label>
-                                    <label className="glass" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '1rem', border: formData.sex === 'female' ? '2px solid var(--accent)' : '1px solid var(--border)', background: formData.sex === 'female' ? 'var(--accent-muted)' : 'transparent' }}>
-                                        <input type="radio" name="sex" value="female" checked={formData.sex === 'female'} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
-                                        <span style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--foreground)' }}>FEMALE</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>GIVEN NAME</label>
-                                    <input name="name" placeholder="FIRST NAME" value={formData.name} onChange={handleChange} className="input-field" required />
-                                </div>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>SURNAME (FAMILY NAME)</label>
-                                    <input name="surname" placeholder="FAMILY NAME" value={formData.surname} onChange={handleChange} className="input-field" required />
-                                </div>
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>3RD NAME <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
-                                    <input name="thirdName" placeholder="MIDDLE NAME" value={formData.thirdName} onChange={handleChange} className="input-field" />
-                                </div>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>4TH NAME <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
-                                    <input name="fourthName" placeholder="OTHER NAME" value={formData.fourthName} onChange={handleChange} className="input-field" />
-                                </div>
-                            </div>
-
-                            {formData.sex === 'female' && (
-                                <div style={inputGroup} className="animate-fade-in">
-                                    <label style={labelStyle}>MAIDEN NAME <span style={{ opacity: 0.5, fontWeight: 400 }}>(FAMILY OF BIRTH)</span></label>
-                                    <input placeholder="MAIDEN FAMILY NAME" name="maidenName" value={formData.maidenName} onChange={handleChange} className="input-field" />
-                                </div>
-                            )}
-
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>EMAIL ADDRESS <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
-                                <input placeholder="E.G. CONTACT@HERITAGE.COM" name="email" value={formData.email} onChange={handleChange} className="input-field" />
-                            </div>
-
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>TRIBE / ETHNIC GROUP</label>
-                                <select name="tribe" value={formData.tribe} onChange={handleChange} className="input-field" style={{ appearance: 'none' }}>
-                                    <option value="">SELECT YOUR TRIBE</option>
+                    {step === 2 && (
+                        <div className="step-container animate-slide-up">
+                            <div className="input-group">
+                                <label>YOUR TRIBE / ETHNIC GROUP</label>
+                                <select name="tribe" value={formData.tribe} onChange={handleChange}>
+                                    <option value="">SELECT TRIBE</option>
                                     {registry.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
                                 </select>
                             </div>
-
-                            <button onClick={() => {
-                                if (!formData.sex) { alert("PLEASE SELECT YOUR SEX FIRST"); return; }
-                                if (!formData.name || !formData.surname) { alert("PLEASE ENTER YOUR NAMES"); return; }
-                                if (!formData.tribe) { alert("PLEASE SELECT YOUR TRIBE"); return; }
-                                setStep(2);
-                            }} className="btn-primary" style={{ marginTop: '0.5rem' }}>CONTINUE TO HERITAGE</button>
-                        </div>
-                    </div>
-                )}
-
-                {step === 2 && (
-                    <div className="animate-fade-in">
-                        <h3 style={stepTitle}>2. ANCESTRAL LEGACY</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>THESE DETAILS HELP MAP YOUR FAMILY BRANCH CORRECTLY.</p>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>SUB-TRIBE / GROUP</label>
-                                    {selectedTribeData && selectedTribeData.subGroups.length > 0 ? (
-                                        <select name="subTribe" value={formData.subTribe} onChange={handleChange} className="input-field">
-                                            <option value="">SELECT OPTION</option>
-                                            {selectedTribeData.subGroups.map(sg => (
-                                                <option key={sg} value={sg}>{sg}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <input name="subTribe" value={formData.subTribe} placeholder="E.G. BUKUSU" onChange={handleChange} className="input-field" />
-                                    )}
+                            {selectedTribeData && (
+                                <div className="input-group animate-fade-in">
+                                    <label>SUB-TRIBE / CLAN</label>
+                                    <select name="subTribe" value={formData.subTribe} onChange={handleChange}>
+                                        <option value="">SELECT SUB-TRIBE</option>
+                                        {selectedTribeData.subGroups.map(sg => <option key={sg} value={sg}>{sg}</option>)}
+                                    </select>
                                 </div>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>CLAN</label>
-                                    <input name="clan" value={formData.clan} placeholder="E.G. KAPLELACH" onChange={handleChange} className="input-field" />
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>BIRTH POSITION (ORDER)</label>
-                                    <select name="birthOrder" value={formData.birthOrder} onChange={handleChange} className="input-field">
-                                        <option value="">SELECT OPTION</option>
+                            )}
+                            <div className="input-grid">
+                                <div className="input-group">
+                                    <label>BIRTH ORDER</label>
+                                    <select name="birthOrder" value={formData.birthOrder} onChange={handleChange}>
+                                        <option value="">SELECT</option>
                                         <option value="first">FIRST BORN</option>
-                                        <option value="second">SECOND BORN</option>
-                                        <option value="third">THIRD BORN</option>
-                                        <option value="fourth">FOURTH BORN</option>
-                                        <option value="fifth">FIFTH BORN</option>
+                                        <option value="middle">MIDDLE BORN</option>
                                         <option value="last">LAST BORN</option>
-                                        <option value="middle">MIDDLE CHILD</option>
                                         <option value="only">ONLY CHILD</option>
                                     </select>
                                 </div>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>PLACE OF BIRTH</label>
-                                    <input name="birthPlace" value={formData.birthPlace} placeholder="NAIROBI, KENYA" onChange={handleChange} className="input-field" />
+                                <div className="input-group">
+                                    <label>BIRTH PLACE</label>
+                                    <input name="birthPlace" value={formData.birthPlace} onChange={handleChange} placeholder="CITY/VILLAGE" />
                                 </div>
                             </div>
-
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>PHONE NUMBER <span style={{ opacity: 0.5, fontWeight: 400 }}>(OPTIONAL)</span></label>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <div style={{ position: 'relative', width: '120px' }}>
-                                        <select
-                                            name="phoneCode"
-                                            value={formData.phoneCode}
-                                            onChange={handleChange}
-                                            className="input-field"
-                                            style={{ appearance: 'none', paddingLeft: '35px' }}
-                                        >
-                                            {countryCodes.map(c => (
-                                                <option key={c.code} value={c.code}>
-                                                    {c.code}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', pointerEvents: 'none' }}>
-                                            {countryCodes.find(c => c.code === formData.phoneCode)?.flag || '🌍'}
-                                        </div>
-                                    </div>
-                                    <input
-                                        type="tel"
-                                        placeholder="7XX XXX XXX"
-                                        name="phoneNumber"
-                                        value={formData.phoneNumber}
-                                        onChange={handleChange}
-                                        className="input-field"
-                                        style={{ flex: 1 }}
-                                    />
-                                </div>
+                            <div className="btn-row">
+                                <button onClick={() => setStep(1)} className="btn-secondary-onboard">BACK</button>
+                                <button onClick={nextStep} className="btn-primary-cinematic">NEXT: SECURITY</button>
                             </div>
+                        </div>
+                    )}
 
-                            <div className="glass" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border)', borderRadius: '15px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: formData.isDeceased ? '1rem' : '0' }}>
-                                    <input
-                                        type="checkbox"
-                                        name="isDeceased"
-                                        id="isDeceased"
-                                        checked={formData.isDeceased}
-                                        onChange={handleChange}
-                                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                    />
-                                    <label htmlFor="isDeceased" style={{ fontSize: '0.9rem', color: 'var(--foreground)', cursor: 'pointer', fontWeight: 'bold' }}>RECORD IS FOR A DECEASED ANCESTOR</label>
-                                </div>
-
-                                {formData.isDeceased && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }} className="animate-fade-in">
-                                        <div style={inputGroup}>
-                                            <label style={labelStyle}>YEAR OF DEATH</label>
-                                            <input type="number" name="deathYear" placeholder="E.G. 1985" value={formData.deathYear} onChange={handleChange} className="input-field" />
-                                        </div>
-                                        <div style={inputGroup}>
-                                            <label style={labelStyle}>MONTH (OPTIONAL)</label>
-                                            <select name="deathMonth" value={formData.deathMonth} onChange={handleChange} className="input-field">
-                                                <option value="">UNKNOWN</option>
-                                                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                                                    <option key={m} value={m}>{m.toUpperCase()}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                )}
+                    {step === 3 && (
+                        <div className="step-container animate-slide-up">
+                            <p className="hint-text">CHOOSE A STRONG PIN OR PASSWORD TO SECURE YOUR VAULT.</p>
+                            <div className="input-group">
+                                <label>CREATE PASSWORD</label>
+                                <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••" />
                             </div>
-
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                                <button onClick={() => setStep(1)} className="btn-secondary" style={{ flex: 1 }}>BACK</button>
-                                <button
-                                    onClick={() => {
-                                        if (status === 'authenticated') {
-                                            handleSubmit();
-                                        } else {
-                                            setStep(3);
-                                        }
-                                    }}
-                                    className="btn-primary"
-                                    style={{ flex: 2 }}
-                                    disabled={loading}
-                                >
-                                    {status === 'authenticated' ? (loading ? 'PROCESSING...' : 'COMPLETE HERITAGE') : 'NEXT: SECURE ACCOUNT'}
+                            <div className="input-group">
+                                <label>CONFIRM PASSWORD</label>
+                                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" />
+                            </div>
+                            <div className="btn-row">
+                                <button onClick={() => setStep(2)} className="btn-secondary-onboard">BACK</button>
+                                <button onClick={handleSubmit} disabled={loading} className="btn-primary-cinematic">
+                                    {loading ? 'SECURING...' : 'COMPLETE ONBOARDING'}
                                 </button>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {step === 3 && (
-                    <div className="animate-fade-in">
-                        <h3 style={stepTitle}>3. ACCOUNT SECURITY</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Secure your Watu ID for future access.</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>PASSWORD</label>
-                                <input type="password" name="password" placeholder="••••••••" value={formData.password} onChange={handleChange} className="input-field" />
-                            </div>
-                            <div style={inputGroup}>
-                                <label style={labelStyle}>CONFIRM PASSWORD</label>
-                                <input type="password" name="confirmPassword" placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} className="input-field" />
-                            </div>
-
-                            <div style={{ padding: '1.25rem', background: 'var(--accent-muted)', borderRadius: '15px', border: '1px dashed var(--accent)', marginTop: '0.5rem' }}>
-                                <p style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: '800', marginBottom: '1rem' }}>RECOVERY FOR USERS WITHOUT EMAIL</p>
-                                <div style={inputGroup}>
-                                    <label style={labelStyle}>SELECT RECOVERY QUESTION</label>
-                                    <select name="securityQuestion" value={formData.securityQuestion} onChange={handleChange} className="input-field">
-                                        <option value="">SELECT A QUESTION</option>
-                                        <option value="mother">WHAT IS YOUR MOTHER'S MAIDEN NAME?</option>
-                                        <option value="village">WHAT IS THE NAME OF YOUR ANCESTRAL VILLAGE?</option>
-                                        <option value="pet">WHAT WAS YOUR FIRST PET'S NAME?</option>
-                                        <option value="school">WHAT SCHOOL DID YOUR FATHER ATTEND?</option>
-                                    </select>
-                                </div>
-                                <div style={{ ...inputGroup, marginTop: '1rem' }}>
-                                    <label style={labelStyle}>YOUR SECRET ANSWER</label>
-                                    <input name="securityAnswer" placeholder="ENTER SECRET ANSWER" value={formData.securityAnswer} onChange={handleChange} className="input-field" />
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                                <button onClick={() => setStep(2)} className="btn-secondary" style={{ flex: 1 }}>BACK</button>
-                                <button onClick={handleSubmit} className="btn-primary" style={{ flex: 2 }} disabled={loading}>
-                                    {loading ? 'PROCESSING...' : 'COMPLETE ACCOUNT'}
-                                </button>
-                            </div>
+                    {step === 4 && (
+                        <div className="step-container animate-fade-in center">
+                            <div className="success-badge">✓</div>
+                            <h2>{watuId}</h2>
+                            <p>THIS IS YOUR UNIQUE IDENTITY KEY.</p>
+                            <p className="small">KEEP IT SAFE. USE IT TO CONNECT YOUR FAMILY MEMBERS.</p>
+                            <button onClick={() => router.push('/')} className="btn-primary-cinematic">ENTER THE NETWORK</button>
                         </div>
-                    </div>
-                )}
-
-                {step === 4 && result && (
-                    <div className="animate-fade-in" style={{ textAlign: 'center' }}>
-                        <div style={{ width: '80px', height: '80px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', margin: '0 auto 1.5rem auto' }}>✓</div>
-                        <h3 style={{ fontSize: '1.5rem', color: 'var(--foreground)' }}>Identity Confirmed!</h3>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>You can now use your unique ID to sign in.</p>
-
-                        <div style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px dashed rgba(99, 102, 241, 0.4)', padding: '1.5rem', borderRadius: 'var(--radius-md)', marginBottom: '2rem' }}>
-                            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--accent)', fontWeight: '700', marginBottom: '0.5rem' }}>Alpha-Numeric Identity Key</p>
-                            <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--foreground)', letterSpacing: '2px' }}>{result.id}</div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                            <button onClick={() => {
-                                localStorage.setItem('watu_id', result.id);
-                                router.push('/connect');
-                            }} className="btn-secondary" style={{ flex: 1 }}>Explore Network</button>
-                            <button
-                                onClick={() => {
-                                    const text = `Join me on Watu.Network! My Ancestral Identity Key is: *${result.id}*. Build your family heritage here: https://watu.network`;
-                                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                                }}
-                                className="btn-primary"
-                                style={{ flex: 1.5, background: '#25D366', border: 'none' }}
-                            >
-                                Share on WhatsApp
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                <style jsx>{`
-                    .input-field {
-                        width: 100%;
-                        padding: 0.875rem 1rem;
-                        border-radius: 12px;
-                        border: 1px solid var(--border);
-                        background: var(--card);
-                        color: var(--foreground);
-                        font-family: inherit;
-                        font-size: 1rem;
-                        transition: all 0.2s ease;
-                        outline: none;
-                        text-transform: uppercase;
-                    }
-                    .input-field::placeholder {
-                        color: var(--text-secondary);
-                        opacity: 0.5;
-                    }
-                    .input-field:focus {
-                        border-color: var(--accent);
-                        background: var(--card-hover);
-                        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-                    }
-                    select.input-field {
-                        cursor: pointer;
-                    }
-                `}</style>
+                    )}
+                </div>
             </div>
+
+            <style jsx>{`
+                .onboard-container {
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 2rem;
+                    background: radial-gradient(circle at top right, #1e293b, #0f172a);
+                }
+                .onboard-glass {
+                    width: 100%;
+                    max-width: 520px;
+                    background: rgba(15, 23, 42, 0.8);
+                    backdrop-filter: blur(40px);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 32px;
+                    padding: 3rem 2.5rem;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                    position: relative;
+                }
+                .step-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 2rem; }
+                .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.1); transition: all 0.5s; }
+                .dot.active { background: var(--accent); width: 24px; border-radius: 4px; }
+                .dot.pulsing { animation: pulse 2s infinite; }
+                @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); } 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); } }
+
+                .onboard-header { text-align: center; margin-bottom: 2.5rem; }
+                .onboard-header h1 { font-size: 1.5rem; letter-spacing: 0.1em; color: white; margin: 0; }
+                .subtitle { font-size: 0.7rem; color: var(--accent); letter-spacing: 0.2em; margin-top: 0.5rem; font-weight: 800; }
+
+                .input-group { margin-bottom: 1.5rem; }
+                .input-group label { display: block; font-size: 0.65rem; font-weight: 900; color: var(--text-secondary); margin-bottom: 0.75rem; letter-spacing: 0.05em; }
+                
+                input, select {
+                    width: 100%;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 16px;
+                    padding: 1rem 1.25rem;
+                    color: white;
+                    font-size: 1rem;
+                    outline: none;
+                    transition: all 0.2s;
+                }
+                input:focus, select:focus { border-color: var(--accent); background: rgba(255,255,255,0.05); }
+
+                .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+                
+                .sex-toggle { display: flex; gap: 10px; background: rgba(255,255,255,0.03); padding: 5px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+                .sex-toggle button { flex: 1; padding: 0.8rem; border-radius: 12px; border: none; background: transparent; color: var(--text-secondary); font-weight: 800; font-size: 0.75rem; cursor: pointer; transition: all 0.3s; }
+                .sex-toggle button.active { background: var(--accent); color: white; box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+
+                .btn-primary-cinematic {
+                    width: 100%;
+                    padding: 1.1rem;
+                    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+                    border: none;
+                    border-radius: 18px;
+                    color: white;
+                    font-weight: 900;
+                    letter-spacing: 0.05em;
+                    cursor: pointer;
+                    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+                }
+                .btn-primary-cinematic:hover { transform: translateY(-2px); box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.6); }
+
+                .btn-row { display: flex; gap: 1rem; margin-top: 1rem; }
+                .btn-secondary-onboard { flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 18px; font-weight: 800; cursor: pointer; transition: all 0.2s; }
+                .btn-secondary-onboard:hover { background: rgba(255,255,255,0.05); }
+
+                .hint-text { font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-bottom: 2rem; line-height: 1.6; }
+
+                .center { text-align: center; }
+                .success-badge { width: 80px; height: 80px; border-radius: 50%; background: var(--accent); display: flex; alignItems: center; justifyContent: center; margin: 0 auto 2rem auto; font-size: 2.5rem; color: white; box-shadow: 0 0 30px var(--accent); }
+                .small { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; }
+            `}</style>
         </div>
     );
 }
-
-const stepTitle = { fontSize: '1.25rem', color: 'var(--foreground)', marginBottom: '1.5rem' };
-const inputGroup = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem'
-};
-
-const labelStyle = {
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    color: 'var(--text-secondary)',
-    marginLeft: '4px'
-};
-
-const reviewRow = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: '0.95rem',
-    margin: '0.75rem 0',
-    color: 'var(--text-secondary)'
-};

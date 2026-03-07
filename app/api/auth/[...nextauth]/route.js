@@ -4,6 +4,8 @@ import AppleProvider from "next-auth/providers/apple";
 import EmailProvider from "next-auth/providers/email";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { executeQuery } from "@/lib/neo4j";
+import { verifyOTP } from "@/lib/otp";
+import { generateUniqueId } from "@/lib/utils";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
@@ -20,21 +22,45 @@ export const authOptions = {
             clientSecret: process.env.APPLE_SECRET,
         })] : []),
 
-        // ─── Magic Link Email ────────────────────────────────────────
-        ...(process.env.EMAIL_SERVER_HOST ? [EmailProvider({
-            server: {
-                host: process.env.EMAIL_SERVER_HOST,
-                port: process.env.EMAIL_SERVER_PORT,
-                auth: {
-                    user: process.env.EMAIL_SERVER_USER,
-                    pass: process.env.EMAIL_SERVER_PASSWORD,
-                },
-            },
-            from: process.env.EMAIL_FROM || "noreply@watu.network",
-        })] : []),
-
-        // ─── Watu ID + Password (Custom) ────────────────────────────
+        // ─── Phone OTP (Custom Credentials) ─────────────────────────
         CredentialsProvider({
+            id: "phone",
+            name: "Phone OTP",
+            credentials: {
+                phone: { label: "Phone", type: "text" },
+                otp: { label: "OTP", type: "text" },
+            },
+            async authorize(credentials) {
+                const { phone, otp } = credentials;
+                if (!phone || !otp) return null;
+
+                const result = verifyOTP(phone, otp);
+                if (result.error) throw new Error(result.error);
+
+                // OTP is valid — find or create user in Neo4j
+                const existing = await executeQuery(
+                    `MATCH (p:Person {phone: $phone}) RETURN p.id as id, p.name as name LIMIT 1`,
+                    { phone }
+                );
+
+                if (existing && existing.length > 0) {
+                    const user = existing[0];
+                    return { id: user.get('id'), name: user.get('name'), phone };
+                } else {
+                    // Create stub for new user
+                    const id = generateUniqueId();
+                    await executeQuery(
+                        `CREATE (p:Person { id: $id, name: 'NEW', phone: $phone, provider: 'phone', createdAt: datetime() })`,
+                        { id, phone }
+                    );
+                    return { id, name: 'NEW', phone };
+                }
+            }
+        }),
+
+        // ─── Watu ID + Password (Standard Credentials) ──────────────
+        CredentialsProvider({
+            id: "credentials",
             name: "Watu ID",
             credentials: {
                 id: { label: "Watu ID", type: "text" },
@@ -51,13 +77,14 @@ export const authOptions = {
 
                 if (!result || result.length === 0) return null;
 
-                const user = result[0].get("p").properties;
+                const userNode = result[0].get("p");
+                const user = userNode.properties;
                 const valid = await bcrypt.compare(password, user.passwordHash);
-                if (!valid) return null;
+                if (!valid) throw new Error("INVALID PASSWORD");
 
                 return {
                     id: user.id,
-                    name: `${user.name} ${user.surname}`,
+                    name: `${user.name} ${user.surname || ''}`.trim(),
                     email: user.email || null,
                 };
             },
@@ -84,41 +111,27 @@ export const authOptions = {
             return session;
         },
         async signIn({ user, account }) {
-            // For OAuth (Google/Apple), auto-create a Person node if not exists
+            // For OAuth (Google/Apple) only! Phone/Credentials are already handled in `authorize`.
             if (account?.provider === "google" || account?.provider === "apple") {
                 try {
-                    console.log(`📡 NEXTAUTH: Attempting ${account.provider} sign-in for ${user.email}`);
                     const existingResult = await executeQuery(
                         `MATCH (p:Person {email: $email}) RETURN p.id as id LIMIT 1`,
                         { email: user.email }
                     );
                     if (existingResult.length === 0) {
-                        console.log(`🌱 NEXTAUTH: New user detected. Creating stub profile...`);
-                        const { generateUniqueId } = await import("@/lib/utils");
                         const id = generateUniqueId();
                         await executeQuery(
-                            `CREATE (p:Person {
-                                id: $id,
-                                name: $name,
-                                surname: '',
-                                email: $email,
-                                isCitizen: true,
-                                isDeceased: false,
-                                provider: $provider,
-                                createdAt: datetime()
-                            })`,
+                            `CREATE (p:Person { id: $id, name: $name, email: $email, provider: $provider, createdAt: datetime() })`,
                             { id, name: user.name?.split(" ")[0] || "NEW", email: user.email, provider: account.provider }
                         );
                         user.id = id;
-                        console.log(`✅ NEXTAUTH: Profile created with ID: ${id}`);
                     } else {
                         user.id = existingResult[0].get("id");
-                        console.log(`🔗 NEXTAUTH: Connected to existing profile ID: ${user.id}`);
                     }
                     return true;
                 } catch (err) {
-                    console.error("❌ NEXTAUTH SIGN-IN ERROR:", err);
-                    return false; // Prevent sign-in if database creation fails
+                    console.error("❌ OAUTH SIGN-IN ERROR:", err);
+                    return false;
                 }
             }
             return true;
