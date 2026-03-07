@@ -50,7 +50,7 @@ export default function ConnectPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    personId: myId,
+                    personId: myId.toUpperCase(),
                     action: 'MANUAL_ADD',
                     relationship: manualForm.relationship,
                     details: manualForm
@@ -127,7 +127,7 @@ export default function ConnectPage() {
             const res = await fetch('/api/connect', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ personId: myId, relativeId, relationship })
+                body: JSON.stringify({ personId: myId.toUpperCase(), relativeId, relationship })
             });
             const data = await res.json();
             if (data.success) {

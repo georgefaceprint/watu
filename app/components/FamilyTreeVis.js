@@ -89,30 +89,60 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
         const focusNode = nodeMap.get(focusId) || nodes[0];
         const currentFocusId = focusNode.id;
 
-        // Simple Level Assignment
-        const levels = { '-1': [], '0': [], '1': [] };
-        nodes.forEach(n => {
-            if (n.id === currentFocusId) {
-                n.level = 0; levels['0'].push(n);
-            } else {
-                const isParent = links.some(l => l.source === n.id && l.target === currentFocusId && l.type === 'CHILD_OF');
-                const isChild = links.some(l => l.target === n.id && l.source === currentFocusId && l.type === 'CHILD_OF');
-                const isSpouse = links.some(l => (l.source === n.id && l.target === currentFocusId) || (l.target === n.id && l.source === currentFocusId)) && links.find(l => (l.source === n.id && l.target === currentFocusId) || (l.target === n.id && l.source === currentFocusId)).type === 'SPOUSE_OF';
+        // ─── DYNAMIC GENERATIONAL MAPPING (BFS) ──────────────
+        // This calculates the generational offset from the focus node
+        // Ancestors = -1, -2... | Peers = 0 | Descendants = 1, 2...
+        const queue = [{ id: currentFocusId, gen: 0 }];
+        const visited = new Set([currentFocusId]);
+        const nodeGenMap = { [currentFocusId]: 0 };
 
-                if (isParent) { n.level = -1; levels['-1'].push(n); }
-                else if (isChild) { n.level = 1; levels['1'].push(n); }
-                else if (isSpouse) { n.level = 0; levels['0'].push(n); }
-                else { n.level = 99; }
+        while (queue.length > 0) {
+            const { id, gen } = queue.shift();
+
+            links.forEach(l => {
+                let neighborId = null;
+                let nextGen = gen;
+
+                if (l.source === id) {
+                    neighborId = l.target;
+                    if (l.type === 'CHILD_OF') nextGen = gen - 1; // Parent
+                    else if (l.type === 'PARENT_OF') nextGen = gen + 1; // Child
+                    else nextGen = gen; // Sibling/Spouse
+                } else if (l.target === id) {
+                    neighborId = l.source;
+                    if (l.type === 'CHILD_OF') nextGen = gen + 1; // Child
+                    else if (l.type === 'PARENT_OF') nextGen = gen - 1; // Parent
+                    else nextGen = gen; // Sibling/Spouse
+                }
+
+                if (neighborId && !visited.has(neighborId)) {
+                    visited.add(neighborId);
+                    nodeGenMap[neighborId] = nextGen;
+                    queue.push({ id: neighborId, gen: nextGen });
+                }
+            });
+        }
+
+        const levels = {};
+        nodes.forEach(n => {
+            const gen = nodeGenMap[n.id];
+            if (gen !== undefined) {
+                n.level = gen;
+                if (!levels[gen]) levels[gen] = [];
+                levels[gen].push(n);
+            } else {
+                n.level = 99; // Orphaned from focus
             }
         });
 
-        // Position nodes
-        Object.keys(levels).forEach(lvl => {
+        // Position nodes using sorted generational levels
+        const sortedLevels = Object.keys(levels).map(Number).sort((a, b) => a - b);
+        sortedLevels.forEach(lvl => {
             const nodesInLvl = levels[lvl];
             const totalWidth = nodesInLvl.length * (cardW + gapX) - gapX;
             nodesInLvl.forEach((n, i) => {
                 n.x = (i * (cardW + gapX)) - (totalWidth / 2);
-                n.y = parseInt(lvl) * gapY;
+                n.y = lvl * gapY;
             });
         });
 
@@ -173,14 +203,14 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
                     </div>
                     <div class="card-info">
                         <div class="tag-row">
-                            <span class="tribe-tag">${d.tribe || 'WATU'}</span>
-                            ${d.isDeceased ? '<span class="status-tag">ANCESTOR</span>' : '<span class="status-tag">ACTIVE</span>'}
+                            <span class="tribe-tag ${d.level < 0 ? 'gen-ancestor' : d.level > 0 ? 'gen-descendant' : 'gen-active'}">${d.tribe || 'WATU'}</span>
+                            ${d.level < 0 ? '<span class="status-tag">L' + Math.abs(d.level) + ' ANCESTOR</span>' : d.level > 0 ? '<span class="status-tag">L' + d.level + ' OFFSPRING</span>' : '<span class="status-tag">ARCHIVE FOCUS</span>'}
                         </div>
                         <h3 class="name">${d.name}</h3>
                         <h4 class="surname">${d.surname}</h4>
                         <div class="meta-data">
                             <span>ID: ${d.id}</span>
-                            <span>GRP: ${d.clan || 'ALPHA'}</span>
+                            <span>GEN: ${d.level === 0 ? 'CORE' : (d.level > 0 ? '+' + d.level : d.level)}</span>
                         </div>
                     </div>
                 </div>
@@ -302,7 +332,11 @@ export default function FamilyTreeVis({ data, onNodeClick, focusId }) {
 
                 .card-info { text-align: center; width: 100%; }
                 .tag-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; font-family: 'Outfit', sans-serif; }
-                .tribe-tag { font-size: 10px; font-weight: 800; color: #fff; background: var(--accent); padding: 5px 12px; border-radius: 6px; letter-spacing: 0.05em; }
+                .tribe-tag { font-size: 10px; font-weight: 800; color: #fff; padding: 5px 12px; border-radius: 6px; letter-spacing: 0.05em; transition: all 0.3s; }
+                .tribe-tag.gen-ancestor { background: linear-gradient(135deg, #b45309, #d97706); box-shadow: 0 0 15px rgba(217, 119, 6, 0.3); }
+                .tribe-tag.gen-active { background: var(--accent); }
+                .tribe-tag.gen-descendant { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+                
                 .status-tag { font-size: 10px; font-weight: 800; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); }
                 
                 .name { font-size: 22px; color: #fff; font-weight: 800; margin: 0; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.02em; }

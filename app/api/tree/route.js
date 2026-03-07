@@ -2,7 +2,7 @@ import { executeQuery } from '@/lib/neo4j';
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
-    const personId = searchParams.get('personId');
+    const personId = searchParams.get('personId')?.toUpperCase();
 
     if (!personId) {
         return Response.json({ error: 'Person ID is required' }, { status: 400 });
@@ -15,9 +15,9 @@ export async function GET(request) {
     const query = `
         MATCH (p:Person {id: $personId})
         CALL apoc.path.subgraphAll(p, {
-            relationshipFilter: 'CHILD_OF>|CHILD_OF<|SPOUSE_OF',
+            relationshipFilter: 'CHILD_OF>|CHILD_OF<|PARENT_OF>|PARENT_OF<|SIBLING_OF|SPOUSE_OF',
             minLevel: 0,
-            maxLevel: 3
+            maxLevel: 5
         })
         YIELD nodes, relationships
         RETURN 
@@ -56,7 +56,7 @@ export async function GET(request) {
 
         if (records.length === 0) {
             // Fallback for new users with no connections yet
-            const userRecords = await executeQuery(`MATCH (p:Person {id: $personId}) RETURN p`, { personId });
+            const userRecords = await executeQuery(`MATCH (p:Person {id: $personId}) RETURN p`, { personId: personId });
             if (userRecords.length > 0) {
                 const user = userRecords[0].get('p').properties;
                 return Response.json({

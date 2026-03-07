@@ -48,7 +48,10 @@ export async function GET(request) {
 
 export async function POST(request) {
     const session = await getServerSession(authOptions);
-    const { personId, relativeId, relationship, action, details } = await request.json();
+    const body = await request.json();
+    const personId = body.personId?.toUpperCase();
+    const relativeId = body.relativeId?.toUpperCase();
+    const { relationship, action, details } = body;
 
     // 1. Session Authorization: Must be logged in to connect anyone
     if (!session) {
